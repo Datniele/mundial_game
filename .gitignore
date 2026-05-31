@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Dati generati a runtime (non versionare pronostici/risultati dei partecipanti)
+data/predictions/
+data/results/results.json
+data/results/group_rankings.json
+
+# Template Excel generato (si rigenera con create_template.py)
+template_pronostici.xlsx
+
+# File Excel caricati dai partecipanti
+*.xlsx
+!scripts/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Env
+.env
+*.env

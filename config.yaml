@@ -1,0 +1,10 @@
+scoring:
+  group_stage:
+    exact_score: 3          # Risultato esatto (es. 2-1)
+    correct_outcome: 1      # Solo esito corretto (V/P/N)
+    group_ranking_exact: 5  # Classifica finale girone identica (1° e 2°)
+    group_ranking_partial: 2  # Solo un posto corretto
+
+  knockout:
+    correct_winner: 2       # Indovina chi passa il turno
+    exact_score: 4          # Risultato esatto in fase eliminazione
