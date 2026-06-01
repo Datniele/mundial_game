@@ -55,6 +55,17 @@ def list_participants() -> List[str]:
     return [p.stem for p in sorted(PREDICTIONS_DIR.glob("*.json"))]
 
 
+def merge_participant(participant: Participant) -> None:
+    """Aggiorna solo le fasi presenti nel file caricato, preservando le altre già salvate."""
+    existing = load_participant(participant.name)
+    if existing is None:
+        save_participant(participant)
+        return
+    existing.match_predictions.update(participant.match_predictions)
+    existing.group_rankings.update(participant.group_rankings)
+    save_participant(existing)
+
+
 # ---------- Results ----------
 
 def save_results(results: Dict[str, dict]) -> None:

@@ -44,7 +44,10 @@ def build_istruzioni(wb: openpyxl.Workbook):
     ws["A1"].font = Font(bold=True, size=14)
     istruzioni = [
         "",
-        "1. Compila TUTTI i fogli del file.",
+        "PUOI CONSEGNARE I PRONOSTICI IN PIU' RIPRESE, FASE PER FASE.",
+        "Ogni caricamento aggiorna solo le fasi presenti nel file; le altre restano invariate.",
+        "",
+        "1. Compila i fogli delle fasi che vuoi inviare (non obbligatorio compilarli tutti subito).",
         "2. Foglio GIRONI: inserisci i gol previsti per ogni partita (colonne gialle).",
         "   Il torneo ha 12 gironi (A-L) con 4 squadre ciascuno, per un totale di 72 partite.",
         "3. Foglio CLASSIFICHE_GIRONI: inserisci chi finirà 1° e 2° in ogni girone.",
@@ -52,7 +55,7 @@ def build_istruzioni(wb: openpyxl.Workbook):
         "   Avanzano ai sedicesimi: i primi 2 di ogni girone (24 squadre) + le 8 migliori terze (32 totali).",
         "5. Non modificare i nomi dei fogli né le intestazioni delle colonne.",
         "6. Salva il file con il nome: nome_cognome.xlsx (es. mario_rossi.xlsx).",
-        "7. Consegna il file al referente entro la scadenza stabilita.",
+        "7. Consegna il file al referente. Puoi riconsegnarlo più volte per aggiungere fasi successive.",
         "",
         "SISTEMA DI PUNTEGGIO (modificabile nella sezione Configurazione dell'app):",
         "  • Risultato esatto girone:          3 punti",
