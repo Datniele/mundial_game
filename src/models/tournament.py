@@ -39,3 +39,13 @@ def get_knockout_slots() -> List[dict]:
     with open(FIXTURES_PATH, encoding="utf-8") as f:
         data = json.load(f)
     return data["knockout_rounds"]
+
+
+def get_knockout_match_ids_by_phase() -> Dict[str, List[str]]:
+    """Returns {phase_name: [match_ids]} for all knockout rounds."""
+    result: Dict[str, List[str]] = {}
+    for slot in get_knockout_slots():
+        phase = slot["phase"]
+        ids = [f"{slot['prefix']}{i:02d}" for i in range(1, slot["slots"] + 1)]
+        result.setdefault(phase, []).extend(ids)
+    return result

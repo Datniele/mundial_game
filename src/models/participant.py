@@ -7,7 +7,7 @@ from src.models.match import MatchPrediction
 class Participant:
     name: str
     match_predictions: Dict[str, MatchPrediction] = field(default_factory=dict)
-    # group -> [1st_place, 2nd_place]
+    # group -> [1st, 2nd, 3rd, 4th]
     group_rankings: Dict[str, List[str]] = field(default_factory=dict)
     total_score: int = 0
     score_breakdown: Dict[str, int] = field(default_factory=dict)
