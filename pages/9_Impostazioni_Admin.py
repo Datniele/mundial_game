@@ -113,30 +113,118 @@ st.divider()
 # ── Carica pronostici da file ──────────────────────────────────────────────────
 
 st.subheader("📂 Carica pronostici da file")
-st.caption("Carica un file JSON di pronostici esportato dall'app. I dati vengono uniti con quelli già presenti.")
+st.caption(
+    "Carica un file JSON di pronostici esportato dall'app. Sono accettati sia "
+    "l'export di un singolo partecipante sia l'export per fase (più partecipanti). "
+    "I dati vengono uniti con quelli già presenti."
+)
+
+
+def _parse_upload(raw) -> list[Participant]:
+    """Estrae i partecipanti da un file caricato.
+
+    Accetta entrambi i formati prodotti dall'app:
+    - export per fase: {"phase": ..., "participants": [{...}, ...]}
+    - singolo partecipante: {"name": ..., "match_predictions"/"group_rankings": ...}
+    """
+    if isinstance(raw, dict) and isinstance(raw.get("participants"), list):
+        entries = raw["participants"]
+    elif isinstance(raw, list):
+        entries = raw
+    else:
+        entries = [raw]
+    return [Participant.from_dict(entry) for entry in entries]
+
 
 uploaded = st.file_uploader("File JSON pronostici", type="json", key="upload_predictions")
 
 if uploaded is not None:
     try:
         raw = json.load(uploaded)
-        participant = Participant.from_dict(raw)
-        col_up, col_msg = st.columns([1, 4])
-        with col_up:
-            if st.button("⬆️ Importa", key="btn_import", disabled=not is_authorized):
-                register_participant(participant.name)
-                merge_participant(participant)
-                update_registry_timestamp(participant.name)
-                st.success(
-                    f"Pronostici di **{participant.name}** importati correttamente "
-                    f"({len(participant.group_rankings)} gironi, "
-                    f"{len(participant.match_predictions)} partite knockout)."
-                )
-                st.rerun()
-        if not is_authorized:
-            col_msg.caption("Accesso non autorizzato.")
+        parsed = _parse_upload(raw)
+        if not parsed:
+            st.warning("Il file non contiene pronostici da importare.")
+        else:
+            names = ", ".join(f"**{p.name}**" for p in parsed)
+            st.caption(f"{len(parsed)} partecipante/i nel file: {names}")
+            col_up, col_msg = st.columns([1, 4])
+            with col_up:
+                if st.button("⬆️ Importa", key="btn_import", disabled=not is_authorized):
+                    for participant in parsed:
+                        register_participant(participant.name)
+                        merge_participant(participant)
+                        update_registry_timestamp(participant.name)
+                    tot_gironi = sum(len(p.group_rankings) for p in parsed)
+                    tot_knockout = sum(len(p.match_predictions) for p in parsed)
+                    st.success(
+                        f"Importati i pronostici di {len(parsed)} partecipante/i "
+                        f"({tot_gironi} gironi, {tot_knockout} partite knockout)."
+                    )
+                    st.rerun()
+            if not is_authorized:
+                col_msg.caption("Accesso non autorizzato.")
     except Exception as e:
         st.error(f"File non valido: {e}")
+
+# ── Scarica pronostici per fase ─────────────────────────────────────────────────
+
+st.subheader("📥 Scarica pronostici per fase")
+st.caption("Seleziona una fase di gioco ed esporta in JSON i pronostici di tutti i partecipanti per quella fase.")
+
+
+def _phase_export(participant, label: str, check, group_ids: set) -> dict | None:
+    """Estrae i pronostici di un partecipante per la fase indicata. None se vuoti."""
+    if label == "Class. Gironi":
+        if not participant.group_rankings:
+            return None
+        return {"name": participant.name, "group_rankings": participant.group_rankings}
+    match_preds = {
+        mid: {"home_goals": p.home_goals, "away_goals": p.away_goals}
+        for mid, p in participant.match_predictions.items()
+        if check(mid, group_ids)
+    }
+    if not match_preds:
+        return None
+    return {"name": participant.name, "match_predictions": match_preds}
+
+
+col_phase, col_dl = st.columns([2, 1])
+with col_phase:
+    selected_label = st.selectbox(
+        "Fase di gioco",
+        options=[label for label, _ in _PHASES],
+        key="download_phase",
+    )
+
+selected_check = next(check for label, check in _PHASES if label == selected_label)
+phase_entries = [
+    entry
+    for p in participants
+    if (entry := _phase_export(p, selected_label, selected_check, group_ids)) is not None
+]
+
+export_payload = json.dumps(
+    {"phase": selected_label, "participants": phase_entries},
+    ensure_ascii=False,
+    indent=2,
+)
+phase_slug = re.sub(r"[^a-z0-9]+", "_", selected_label.lower()).strip("_")
+
+with col_dl:
+    st.write("")
+    st.write("")
+    st.download_button(
+        "⬇️ Scarica JSON",
+        data=export_payload,
+        file_name=f"pronostici_{phase_slug}.json",
+        mime="application/json",
+        disabled=not phase_entries,
+    )
+
+if not phase_entries:
+    st.info(f"Nessun pronostico inserito per la fase «{selected_label}».")
+else:
+    st.caption(f"{len(phase_entries)} partecipanti con pronostici per «{selected_label}».")
 
 st.divider()
 

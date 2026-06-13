@@ -184,7 +184,10 @@ La pagina **Impostazioni Admin** (`9_Impostazioni_Admin.py`) è riservata all'am
 
 - **Gestione partecipanti**: elenco con copertura fasi (classifiche gironi + fasi knockout) ed eliminazione singola
 - **Carica pronostici da file**: upload di un file `.json` esportato dall'app; i dati vengono uniti con quelli già presenti tramite merge automatico
+- **Scarica pronostici per fase**: esporta in JSON i pronostici di tutti i partecipanti per una fase selezionata
 - **Reset completo**: elimina tutti i pronostici e svuota il registry (richiede conferma esplicita)
+
+> **Formati accettati dall'upload.** Il caricamento accetta sia l'export di un **singolo partecipante** (`{"name": ..., "match_predictions": ..., "group_rankings": ...}`) sia l'**export per fase** prodotto dal download (`{"phase": ..., "participants": [...]}`, con più partecipanti). In entrambi i casi i pronostici vengono uniti con quelli esistenti tramite merge incrementale per fase. Un file scaricato con «Scarica pronostici per fase» può quindi essere ricaricato direttamente.
 
 ### Controllo accessi
 
