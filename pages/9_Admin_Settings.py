@@ -8,9 +8,11 @@ from src.models.participant import Participant
 from src.storage.json_storage import (
     delete_participant,
     load_all_participants,
+    load_phase_locks,
     merge_participant,
     register_participant,
     reset_all_predictions,
+    set_phase_lock,
     update_registry_timestamp,
 )
 
@@ -225,6 +227,47 @@ if not phase_entries:
     st.info(f"No predictions submitted for the «{selected_label}» phase yet.")
 else:
     st.caption(f"{len(phase_entries)} players with predictions for «{selected_label}».")
+
+st.divider()
+
+# ── Blocco fasi pronostici ──────────────────────────────────────────────────────
+
+st.subheader("🔒 Lock prediction phases")
+st.caption(
+    "Lock a phase to stop players from changing their predictions for it. "
+    "Use this once a phase's deadline has passed (e.g. before the group stage kicks off)."
+)
+
+# Fasi così come appaiono ai partecipanti in «Make Predictions»
+_LOCKABLE_PHASES = [
+    "Groups",
+    "Round of 32",
+    "Round of 16",
+    "Quarter-finals",
+    "Semi-finals",
+    "Final",
+]
+
+_locked = load_phase_locks()
+
+lock_cols = st.columns(len(_LOCKABLE_PHASES))
+for col, phase_name in zip(lock_cols, _LOCKABLE_PHASES):
+    new_state = col.toggle(
+        phase_name,
+        value=phase_name in _locked,
+        key=f"lock_{phase_name}",
+        disabled=not is_authorized,
+    )
+    if is_authorized and new_state != (phase_name in _locked):
+        set_phase_lock(phase_name, new_state)
+        st.rerun()
+
+if _locked:
+    st.info("Locked phases: " + ", ".join(f"**{p}**" for p in _LOCKABLE_PHASES if p in _locked))
+else:
+    st.caption("No phases locked — players can edit everything.")
+if not is_authorized:
+    st.caption("Access denied.")
 
 st.divider()
 

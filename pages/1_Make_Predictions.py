@@ -4,6 +4,7 @@ from src.models.participant import Participant
 from src.models.match import MatchPrediction
 from src.models.tournament import load_fixtures, get_knockout_slots, get_knockout_match_ids_by_phase
 from src.storage.json_storage import (
+    is_phase_locked,
     load_participant,
     load_registry,
     merge_participant,
@@ -90,6 +91,14 @@ def _phase_filled(p: Participant, phase_name: str) -> bool:
 
 
 phase = st.radio("Which phase are we filling in?", PHASES, horizontal=True)
+
+# Blocco admin: se la fase è bloccata i pronostici non sono più modificabili
+if is_phase_locked(phase):
+    st.error(
+        f"🔒 Predictions for **{phase}** are locked. The deadline has passed — "
+        "no more changes for this phase."
+    )
+    st.stop()
 
 # Prerequisito: la fase precedente deve essere compilata
 phase_idx = PHASES.index(phase)

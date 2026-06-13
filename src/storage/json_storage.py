@@ -13,6 +13,7 @@ RANKINGS_PATH = DATA_DIR / "results" / "group_rankings.json"
 REGISTRY_PATH = DATA_DIR / "participants" / "registry.json"
 RANKINGS_META_PATH = DATA_DIR / "results" / "group_rankings_meta.json"
 GROUP_STANDINGS_PATH = DATA_DIR / "results" / "group_standings.json"
+PHASE_LOCKS_PATH = DATA_DIR / "results" / "phase_locks.json"
 
 
 def _ensure_dirs():
@@ -181,3 +182,36 @@ def load_rankings_source() -> str | None:
         return None
     with open(RANKINGS_META_PATH, encoding="utf-8") as f:
         return json.load(f).get("source")
+
+
+# ---------- Phase locks ----------
+
+def load_phase_locks() -> set:
+    """Restituisce l'insieme delle fasi bloccate (pronostici non più modificabili)."""
+    if not PHASE_LOCKS_PATH.exists():
+        return set()
+    with open(PHASE_LOCKS_PATH, encoding="utf-8") as f:
+        return set(json.load(f).get("locked_phases", []))
+
+
+def save_phase_locks(locked_phases: set) -> None:
+    """Salva l'insieme delle fasi bloccate."""
+    _ensure_dirs()
+    with open(PHASE_LOCKS_PATH, "w", encoding="utf-8") as f:
+        json.dump({"locked_phases": sorted(locked_phases)}, f, ensure_ascii=False, indent=2)
+
+
+def set_phase_lock(phase: str, locked: bool) -> set:
+    """Blocca o sblocca una singola fase. Restituisce l'insieme aggiornato."""
+    locks = load_phase_locks()
+    if locked:
+        locks.add(phase)
+    else:
+        locks.discard(phase)
+    save_phase_locks(locks)
+    return locks
+
+
+def is_phase_locked(phase: str) -> bool:
+    """True se i pronostici per la fase indicata sono bloccati."""
+    return phase in load_phase_locks()
