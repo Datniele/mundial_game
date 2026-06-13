@@ -11,28 +11,40 @@ from src.storage.json_storage import (
     update_registry_timestamp,
 )
 
-st.set_page_config(page_title="Inserisci Pronostici", page_icon="⚽", layout="wide")
-st.title("⚽ Inserisci i tuoi Pronostici")
+st.set_page_config(page_title="Make Your Predictions", page_icon="⚽", layout="wide")
+st.title("⚽ Make Your Predictions")
 
 # ── Registrazione ──────────────────────────────────────────────────────────────
 
-st.subheader("Chi sei?")
-raw_name = st.text_input("Nome e Cognome", placeholder="es. Mario Rossi")
-
-if not raw_name.strip():
-    st.info("Inserisci il tuo nome per iniziare.")
-    st.stop()
-
-name = raw_name.strip().title()
-participant = load_participant(name) or Participant(name=name)
+st.subheader("Who are you?")
 
 registry = load_registry()
-known = {p["name"] for p in registry.get("participants", [])}
-if name not in known:
-    register_participant(name)
-    st.success(f"Benvenuto **{name}** — sei stato registrato!")
+known_names = sorted(p["name"] for p in registry.get("participants", []))
+
+NEW_OPTION = "➕ New player"
+options = ["—"] + known_names + [NEW_OPTION]
+choice = st.selectbox("Pick your name", options=options, index=0)
+
+if choice == "—":
+    st.info("Pick your name to get the ball rolling.")
+    st.stop()
+
+if choice == NEW_OPTION:
+    raw_name = st.text_input("First and last name", placeholder="e.g. John Smith")
+    if not raw_name.strip():
+        st.info("Drop your name in here to get started.")
+        st.stop()
+    name = raw_name.strip().title()
 else:
-    st.info(f"Bentornato **{name}**.")
+    name = choice
+
+participant = load_participant(name) or Participant(name=name)
+
+if name not in set(known_names):
+    register_participant(name)
+    st.success(f"Welcome aboard, **{name}** — you're officially in the game!")
+else:
+    st.info(f"Look who's back: **{name}**. 👋")
 
 # ── Fixtures ───────────────────────────────────────────────────────────────────
 
@@ -55,20 +67,20 @@ ko_match_ids = _ko_ids()
 
 # ── Selettore fase ─────────────────────────────────────────────────────────────
 
-PHASES = ["Gironi", "Sedicesimi", "Ottavi", "Quarti", "Semifinali", "Finale"]
+PHASES = ["Groups", "Round of 32", "Round of 16", "Quarter-finals", "Semi-finals", "Final"]
 
 PHASE_TO_INTERNAL: dict[str, list[str]] = {
-    "Sedicesimi": ["sedicesimi"],
-    "Ottavi": ["ottavi"],
-    "Quarti": ["quarti"],
-    "Semifinali": ["semifinali"],
-    "Finale": ["finale_3posto", "finale"],
+    "Round of 32": ["sedicesimi"],
+    "Round of 16": ["ottavi"],
+    "Quarter-finals": ["quarti"],
+    "Semi-finals": ["semifinali"],
+    "Final": ["finale_3posto", "finale"],
 }
 
 
 def _phase_filled(p: Participant, phase_name: str) -> bool:
-    """True se il partecipante ha già salvato almeno un pronostico per la fase data."""
-    if phase_name == "Gironi":
+    """True if the player has already saved at least one prediction for the given phase."""
+    if phase_name == "Groups":
         return bool(p.group_rankings) and any(
             any(v is not None for v in r) for r in p.group_rankings.values()
         )
@@ -77,7 +89,7 @@ def _phase_filled(p: Participant, phase_name: str) -> bool:
     return any(mid in p.match_predictions for mid in ids)
 
 
-phase = st.radio("Fase da compilare", PHASES, horizontal=True)
+phase = st.radio("Which phase are we filling in?", PHASES, horizontal=True)
 
 # Prerequisito: la fase precedente deve essere compilata
 phase_idx = PHASES.index(phase)
@@ -85,7 +97,7 @@ if phase_idx > 0:
     prev_phase = PHASES[phase_idx - 1]
     if not _phase_filled(participant, prev_phase):
         st.warning(
-            f"Per compilare **{phase}** devi prima salvare i pronostici di **{prev_phase}**."
+            f"Whoa, not so fast! Before tackling **{phase}**, you need to save your **{prev_phase}** picks first."
         )
         st.stop()
 
@@ -115,20 +127,20 @@ def _save_knockout(new_preds: dict) -> None:
 
 # ── GIRONI ─────────────────────────────────────────────────────────────────────
 
-if phase == "Gironi":
-    st.subheader("Classifica finale dei gironi")
-    st.caption("Ordina le 4 squadre di ogni girone dalla prima all'ultima classificata.")
+if phase == "Groups":
+    st.subheader("Final group standings")
+    st.caption("Rank the 4 teams in each group, from top dog to wooden spoon.")
 
     new_rankings: dict = {}
 
     for group_id, group_teams in sorted(groups.items()):
-        with st.expander(f"Girone {group_id} — {', '.join(group_teams)}", expanded=False):
+        with st.expander(f"Group {group_id} — {', '.join(group_teams)}", expanded=False):
             existing_rank = participant.group_rankings.get(group_id, [])
             while len(existing_rank) < 4:
                 existing_rank.append(None)
 
             rank_cols = st.columns(4)
-            labels = ["🥇 1° posto", "🥈 2° posto", "🥉 3° posto", "4° posto"]
+            labels = ["🥇 1st place", "🥈 2nd place", "🥉 3rd place", "4th place"]
             ranking = []
             for i, (col, label) in enumerate(zip(rank_cols, labels)):
                 already_selected = {t for t in ranking if t is not None}
@@ -141,9 +153,9 @@ if phase == "Gironi":
                 ranking.append(val if val != "—" else None)
             new_rankings[group_id] = ranking
 
-    if st.button("💾 Salva Gironi", type="primary"):
+    if st.button("💾 Save Groups", type="primary"):
         _save_rankings(new_rankings)
-        st.success("Classifiche gironi salvate correttamente.")
+        st.success("Group standings saved. Nicely done!")
         st.rerun()
 
 # ── FASI A ELIMINAZIONE ────────────────────────────────────────────────────────
@@ -152,36 +164,36 @@ else:
     target_phases = PHASE_TO_INTERNAL[phase]
     slot_configs = [s for s in knockout_slots if s["phase"] in target_phases]
 
-    st.subheader(f"Pronostici — {phase}")
+    st.subheader(f"Predictions — {phase}")
     st.caption(
-        "Inserisci il risultato previsto per ogni sfida. "
-        "Le squadre qualificate vengono derivate dai pronostici sui gironi."
+        "Call the score for every clash. "
+        "The qualified teams are worked out from your group-stage picks."
     )
 
     new_preds: dict = {}
-    team_opts = ["Da definire"] + all_teams
+    team_opts = ["TBD"] + all_teams
 
     for slot_cfg in slot_configs:
         prefix = slot_cfg["prefix"]
         n_slots = slot_cfg["slots"]
         phase_label = {
-            "sedicesimi": "Sedicesimi di finale",
-            "ottavi": "Ottavi di finale",
-            "quarti": "Quarti di finale",
-            "semifinali": "Semifinali",
-            "finale_3posto": "Finale 3° posto",
-            "finale": "Finale",
+            "sedicesimi": "Round of 32",
+            "ottavi": "Round of 16",
+            "quarti": "Quarter-finals",
+            "semifinali": "Semi-finals",
+            "finale_3posto": "Third-place play-off",
+            "finale": "Final",
         }.get(slot_cfg["phase"], slot_cfg["phase"])
 
         if len(slot_configs) > 1:
             st.markdown(f"**{phase_label}**")
 
         h = st.columns([3, 0.8, 0.5, 0.8, 3])
-        h[0].markdown("**Squadra 1**")
-        h[1].markdown("**Gol**")
+        h[0].markdown("**Team 1**")
+        h[1].markdown("**Goals**")
         h[2].markdown("")
-        h[3].markdown("**Gol**")
-        h[4].markdown("**Squadra 2**")
+        h[3].markdown("**Goals**")
+        h[4].markdown("**Team 2**")
 
         for i in range(1, n_slots + 1):
             match_id = f"{prefix}{i:02d}"
@@ -212,15 +224,15 @@ else:
         if len(slot_configs) > 1:
             st.divider()
 
-    if st.button(f"💾 Salva {phase}", type="primary"):
+    if st.button(f"💾 Save {phase}", type="primary"):
         _save_knockout(new_preds)
-        st.success(f"Pronostici {phase} salvati correttamente.")
+        st.success(f"{phase} predictions saved. Fingers crossed! 🤞")
         st.rerun()
 
 # ── Sommario copertura ─────────────────────────────────────────────────────────
 
 st.divider()
-st.subheader("Riepilogo pronostici inseriti")
+st.subheader("Your predictions so far")
 
 participant_updated = load_participant(name) or participant
 
@@ -231,5 +243,5 @@ ranking_count = sum(
 knockout_pred_count = len(participant_updated.match_predictions)
 
 c1, c2 = st.columns(2)
-c1.metric("Classifiche gironi", f"{ranking_count} / 12")
-c2.metric("Partite knockout", str(knockout_pred_count))
+c1.metric("Group standings", f"{ranking_count} / 12")
+c2.metric("Knockout matches", str(knockout_pred_count))

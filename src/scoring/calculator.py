@@ -9,6 +9,7 @@ from src.models.participant import Participant
 class GroupStageScore:
     name: str
     total_error: int  # lower = better
+    score: float = 0.0  # fattore di correzione applicato all'errore: più alto = meglio
     per_group: Dict[str, int] = field(default_factory=dict)
 
 
@@ -48,8 +49,13 @@ def score_group_stage(
                     error += 3
             per_group[group] = error
             total_error += error
-        scores.append(GroupStageScore(name=p.name, total_error=total_error, per_group=per_group))
-    return sorted(scores, key=lambda s: s.total_error)
+        # Fattore di correzione: trasforma l'errore (più basso = meglio) in un
+        # punteggio dove più alto = meglio. Errore 0 → 10.
+        score = (96 - total_error) / 9.6
+        scores.append(GroupStageScore(
+            name=p.name, total_error=total_error, score=score, per_group=per_group
+        ))
+    return sorted(scores, key=lambda s: -s.score)
 
 
 def score_knockout_round(

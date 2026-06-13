@@ -16,25 +16,25 @@ from src.storage.json_storage import (
 
 _AUTHORIZED_EMAILS = {"dani.testav@gmail.com", "pietrosestito96@gmail.com"}
 
-st.set_page_config(page_title="Impostazioni Admin", page_icon="🔧", layout="wide")
-st.title("🔧 Impostazioni Admin — Gestione Partecipanti")
+st.set_page_config(page_title="Admin Settings", page_icon="🔧", layout="wide")
+st.title("🔧 Admin Settings — Player Management")
 
 # ── Identità admin ─────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    st.header("Accesso admin")
+    st.header("Admin access")
     admin_email = st.text_input(
-        "La tua email",
-        placeholder="indirizzo@email.com",
+        "Your email",
+        placeholder="you@email.com",
         key="admin_identity",
     ).strip().lower()
 
 is_authorized = admin_email in _AUTHORIZED_EMAILS
 
 if admin_email and not is_authorized:
-    st.sidebar.warning("Accesso non autorizzato.")
+    st.sidebar.warning("Access denied. Nice try, though. 🚫")
 elif not admin_email:
-    st.sidebar.info("Inserisci la tua email per abilitare le operazioni di eliminazione.")
+    st.sidebar.info("Drop in your email to unlock the delete buttons.")
 
 # ── Fixtures (per copertura fasi) ──────────────────────────────────────────────
 
@@ -46,13 +46,13 @@ def _group_match_ids() -> set:
 
 
 _PHASES = [
-    ("Class. Gironi", None),
-    ("Sedicesimi", lambda mid, _: bool(re.match(r"^S\d", mid))),
-    ("Ottavi", lambda mid, _: bool(re.match(r"^O\d", mid))),
-    ("Quarti", lambda mid, _: bool(re.match(r"^Q\d", mid))),
-    ("Semifinali", lambda mid, _: bool(re.match(r"^SF\d", mid))),
-    ("3° Posto", lambda mid, _: mid.startswith("3P")),
-    ("Finale", lambda mid, _: bool(re.match(r"^F\d", mid))),
+    ("Group Standings", None),
+    ("Round of 32", lambda mid, _: bool(re.match(r"^S\d", mid))),
+    ("Round of 16", lambda mid, _: bool(re.match(r"^O\d", mid))),
+    ("Quarter-finals", lambda mid, _: bool(re.match(r"^Q\d", mid))),
+    ("Semi-finals", lambda mid, _: bool(re.match(r"^SF\d", mid))),
+    ("Third Place", lambda mid, _: mid.startswith("3P")),
+    ("Final", lambda mid, _: bool(re.match(r"^F\d", mid))),
 ]
 
 
@@ -60,7 +60,7 @@ def _phase_coverage(participant, group_ids: set) -> dict[str, bool]:
     preds = set(participant.match_predictions.keys())
     coverage = {}
     for label, check in _PHASES:
-        if label == "Class. Gironi":
+        if label == "Group Standings":
             coverage[label] = len(participant.group_rankings) > 0
         else:
             coverage[label] = any(check(mid, group_ids) for mid in preds)
@@ -76,13 +76,13 @@ def _show_coverage(coverage: dict[str, bool]):
 
 # ── Partecipanti registrati ────────────────────────────────────────────────────
 
-st.subheader("Partecipanti registrati")
+st.subheader("Registered players")
 
 participants = load_all_participants()
 group_ids = _group_match_ids()
 
 if not participants:
-    st.info("Nessun partecipante ancora registrato.")
+    st.info("No players signed up yet.")
 else:
     for p in participants:
         coverage = _phase_coverage(p, group_ids)
@@ -90,42 +90,42 @@ else:
         total_phases = len(_PHASES)
 
         with st.expander(
-            f"**{p.name}** — {covered_count}/{total_phases} fasi · "
-            f"{len(p.group_rankings)} gironi classificati · "
-            f"{len(p.match_predictions)} partite knockout"
+            f"**{p.name}** — {covered_count}/{total_phases} phases · "
+            f"{len(p.group_rankings)} groups ranked · "
+            f"{len(p.match_predictions)} knockout matches"
         ):
             _show_coverage(coverage)
             st.write("")
             col_btn, col_msg = st.columns([1, 4])
             with col_btn:
                 if col_btn.button(
-                    "Elimina",
+                    "Delete",
                     key=f"del_{p.name}",
                     disabled=not is_authorized,
                 ):
                     delete_participant(p.name)
                     st.rerun()
             if not is_authorized:
-                col_msg.caption("Accesso non autorizzato.")
+                col_msg.caption("Access denied.")
 
 st.divider()
 
 # ── Carica pronostici da file ──────────────────────────────────────────────────
 
-st.subheader("📂 Carica pronostici da file")
+st.subheader("📂 Upload predictions from a file")
 st.caption(
-    "Carica un file JSON di pronostici esportato dall'app. Sono accettati sia "
-    "l'export di un singolo partecipante sia l'export per fase (più partecipanti). "
-    "I dati vengono uniti con quelli già presenti."
+    "Upload a JSON predictions file exported from the app. Both the single-player export "
+    "and the per-phase export (multiple players) are accepted. "
+    "The data gets merged with whatever's already there."
 )
 
 
 def _parse_upload(raw) -> list[Participant]:
-    """Estrae i partecipanti da un file caricato.
+    """Extract the players from an uploaded file.
 
-    Accetta entrambi i formati prodotti dall'app:
-    - export per fase: {"phase": ..., "participants": [{...}, ...]}
-    - singolo partecipante: {"name": ..., "match_predictions"/"group_rankings": ...}
+    Accepts both formats produced by the app:
+    - per-phase export: {"phase": ..., "participants": [{...}, ...]}
+    - single player: {"name": ..., "match_predictions"/"group_rankings": ...}
     """
     if isinstance(raw, dict) and isinstance(raw.get("participants"), list):
         entries = raw["participants"]
@@ -136,20 +136,20 @@ def _parse_upload(raw) -> list[Participant]:
     return [Participant.from_dict(entry) for entry in entries]
 
 
-uploaded = st.file_uploader("File JSON pronostici", type="json", key="upload_predictions")
+uploaded = st.file_uploader("Predictions JSON file", type="json", key="upload_predictions")
 
 if uploaded is not None:
     try:
         raw = json.load(uploaded)
         parsed = _parse_upload(raw)
         if not parsed:
-            st.warning("Il file non contiene pronostici da importare.")
+            st.warning("This file doesn't contain any predictions to import.")
         else:
             names = ", ".join(f"**{p.name}**" for p in parsed)
-            st.caption(f"{len(parsed)} partecipante/i nel file: {names}")
+            st.caption(f"{len(parsed)} player(s) in the file: {names}")
             col_up, col_msg = st.columns([1, 4])
             with col_up:
-                if st.button("⬆️ Importa", key="btn_import", disabled=not is_authorized):
+                if st.button("⬆️ Import", key="btn_import", disabled=not is_authorized):
                     for participant in parsed:
                         register_participant(participant.name)
                         merge_participant(participant)
@@ -157,24 +157,24 @@ if uploaded is not None:
                     tot_gironi = sum(len(p.group_rankings) for p in parsed)
                     tot_knockout = sum(len(p.match_predictions) for p in parsed)
                     st.success(
-                        f"Importati i pronostici di {len(parsed)} partecipante/i "
-                        f"({tot_gironi} gironi, {tot_knockout} partite knockout)."
+                        f"Imported predictions for {len(parsed)} player(s) "
+                        f"({tot_gironi} groups, {tot_knockout} knockout matches)."
                     )
                     st.rerun()
             if not is_authorized:
-                col_msg.caption("Accesso non autorizzato.")
+                col_msg.caption("Access denied.")
     except Exception as e:
-        st.error(f"File non valido: {e}")
+        st.error(f"Invalid file: {e}")
 
 # ── Scarica pronostici per fase ─────────────────────────────────────────────────
 
-st.subheader("📥 Scarica pronostici per fase")
-st.caption("Seleziona una fase di gioco ed esporta in JSON i pronostici di tutti i partecipanti per quella fase.")
+st.subheader("📥 Download predictions by phase")
+st.caption("Pick a game phase and export everyone's predictions for it to JSON.")
 
 
 def _phase_export(participant, label: str, check, group_ids: set) -> dict | None:
-    """Estrae i pronostici di un partecipante per la fase indicata. None se vuoti."""
-    if label == "Class. Gironi":
+    """Extract a player's predictions for the given phase. None if empty."""
+    if label == "Group Standings":
         if not participant.group_rankings:
             return None
         return {"name": participant.name, "group_rankings": participant.group_rankings}
@@ -191,7 +191,7 @@ def _phase_export(participant, label: str, check, group_ids: set) -> dict | None
 col_phase, col_dl = st.columns([2, 1])
 with col_phase:
     selected_label = st.selectbox(
-        "Fase di gioco",
+        "Game phase",
         options=[label for label, _ in _PHASES],
         key="download_phase",
     )
@@ -214,32 +214,32 @@ with col_dl:
     st.write("")
     st.write("")
     st.download_button(
-        "⬇️ Scarica JSON",
+        "⬇️ Download JSON",
         data=export_payload,
-        file_name=f"pronostici_{phase_slug}.json",
+        file_name=f"predictions_{phase_slug}.json",
         mime="application/json",
         disabled=not phase_entries,
     )
 
 if not phase_entries:
-    st.info(f"Nessun pronostico inserito per la fase «{selected_label}».")
+    st.info(f"No predictions submitted for the «{selected_label}» phase yet.")
 else:
-    st.caption(f"{len(phase_entries)} partecipanti con pronostici per «{selected_label}».")
+    st.caption(f"{len(phase_entries)} players with predictions for «{selected_label}».")
 
 st.divider()
 
 # ── Reset completo ─────────────────────────────────────────────────────────────
 
-st.subheader("⚠️ Reset completo")
+st.subheader("⚠️ Full reset")
 st.warning(
-    "Questa operazione elimina **tutti** i pronostici e il registro dei partecipanti. "
-    "L'azione è irreversibile."
+    "This wipes **all** predictions and the entire player registry. "
+    "There's no undo button — point of no return!"
 )
 
-confirm = st.checkbox("Confermo di voler cancellare tutti i dati", disabled=not is_authorized)
-if st.button("🗑️ Reset completo", type="primary", disabled=not (confirm and is_authorized)):
+confirm = st.checkbox("Yes, I really want to delete everything", disabled=not is_authorized)
+if st.button("🗑️ Full reset", type="primary", disabled=not (confirm and is_authorized)):
     removed = reset_all_predictions()
-    st.success(f"Reset completato: {removed} file eliminati, registry svuotato.")
+    st.success(f"Reset done: {removed} files deleted, registry wiped clean.")
     st.rerun()
 if not is_authorized:
-    st.caption("Accesso non autorizzato.")
+    st.caption("Access denied.")

@@ -15,9 +15,9 @@ st.set_page_config(
 )
 
 st.title("Mundial Game")
-st.subheader("⚽ Il giocone ludopatico dei mondiali")
+st.subheader("⚽ The gloriously addictive World Cup prediction game")
 st.markdown("---")
-st.caption("Usa il menu a sinistra per navigare tra le sezioni.")
+st.caption("Use the menu on the left to wander between the sections.")
 
 col_l, col_c, col_r = st.columns([2, 1, 2])
 with col_c:
