@@ -1,0 +1,602 @@
+{
+  "A": [
+    {
+      "pos": 1,
+      "squadra": "Mexico",
+      "giocate": 1,
+      "vinte": 1,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 2,
+      "gol_subiti": 0,
+      "differenza_reti": 2,
+      "punti": 3
+    },
+    {
+      "pos": 2,
+      "squadra": "South Korea",
+      "giocate": 1,
+      "vinte": 1,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 2,
+      "gol_subiti": 1,
+      "differenza_reti": 1,
+      "punti": 3
+    },
+    {
+      "pos": 3,
+      "squadra": "Czechia",
+      "giocate": 1,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 1,
+      "gol_fatti": 1,
+      "gol_subiti": 2,
+      "differenza_reti": -1,
+      "punti": 0
+    },
+    {
+      "pos": 4,
+      "squadra": "South Africa",
+      "giocate": 1,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 1,
+      "gol_fatti": 0,
+      "gol_subiti": 2,
+      "differenza_reti": -2,
+      "punti": 0
+    }
+  ],
+  "B": [
+    {
+      "pos": 1,
+      "squadra": "Bosnia and Herzegovina",
+      "giocate": 1,
+      "vinte": 0,
+      "nulle": 1,
+      "perse": 0,
+      "gol_fatti": 1,
+      "gol_subiti": 1,
+      "differenza_reti": 0,
+      "punti": 1
+    },
+    {
+      "pos": 1,
+      "squadra": "Canada",
+      "giocate": 1,
+      "vinte": 0,
+      "nulle": 1,
+      "perse": 0,
+      "gol_fatti": 1,
+      "gol_subiti": 1,
+      "differenza_reti": 0,
+      "punti": 1
+    },
+    {
+      "pos": 3,
+      "squadra": "Qatar",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 3,
+      "squadra": "Switzerland",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "C": [
+    {
+      "pos": 1,
+      "squadra": "Brazil",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Haiti",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Morocco",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Scotland",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "D": [
+    {
+      "pos": 1,
+      "squadra": "United States",
+      "giocate": 1,
+      "vinte": 1,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 4,
+      "gol_subiti": 1,
+      "differenza_reti": 3,
+      "punti": 3
+    },
+    {
+      "pos": 2,
+      "squadra": "Australia",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 2,
+      "squadra": "Turkey",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 4,
+      "squadra": "Paraguay",
+      "giocate": 1,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 1,
+      "gol_fatti": 1,
+      "gol_subiti": 4,
+      "differenza_reti": -3,
+      "punti": 0
+    }
+  ],
+  "E": [
+    {
+      "pos": 1,
+      "squadra": "Curacao",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Germany",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Ecuador",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Ivory Coast",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "F": [
+    {
+      "pos": 1,
+      "squadra": "Japan",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Netherlands",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Sweden",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Tunisia",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "G": [
+    {
+      "pos": 1,
+      "squadra": "Egypt",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Belgium",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Iran",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "New Zealand",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "H": [
+    {
+      "pos": 1,
+      "squadra": "Cape Verde",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Saudi Arabia",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Spain",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Uruguay",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "I": [
+    {
+      "pos": 1,
+      "squadra": "France",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Iraq",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Norway",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Senegal",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "J": [
+    {
+      "pos": 1,
+      "squadra": "Algeria",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Argentina",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Jordan",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Austria",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "K": [
+    {
+      "pos": 1,
+      "squadra": "DR Congo",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Colombia",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Portugal",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Uzbekistan",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ],
+  "L": [
+    {
+      "pos": 1,
+      "squadra": "England",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Ghana",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Croatia",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    },
+    {
+      "pos": 1,
+      "squadra": "Panama",
+      "giocate": 0,
+      "vinte": 0,
+      "nulle": 0,
+      "perse": 0,
+      "gol_fatti": 0,
+      "gol_subiti": 0,
+      "differenza_reti": 0,
+      "punti": 0
+    }
+  ]
+}

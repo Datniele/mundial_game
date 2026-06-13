@@ -12,6 +12,7 @@ RESULTS_PATH = DATA_DIR / "results" / "results.json"
 RANKINGS_PATH = DATA_DIR / "results" / "group_rankings.json"
 REGISTRY_PATH = DATA_DIR / "participants" / "registry.json"
 RANKINGS_META_PATH = DATA_DIR / "results" / "group_rankings_meta.json"
+GROUP_STANDINGS_PATH = DATA_DIR / "results" / "group_standings.json"
 
 
 def _ensure_dirs():
@@ -149,6 +150,21 @@ def load_group_rankings() -> Dict[str, List[str]]:
     if not RANKINGS_PATH.exists():
         return {}
     with open(RANKINGS_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_group_standings(standings: Dict[str, List[dict]]) -> None:
+    """Salva la classifica completa dei gironi (pos, squadra, punti, statistiche) per la visualizzazione."""
+    _ensure_dirs()
+    with open(GROUP_STANDINGS_PATH, "w", encoding="utf-8") as f:
+        json.dump(standings, f, ensure_ascii=False, indent=2)
+
+
+def load_group_standings() -> Dict[str, List[dict]]:
+    """Restituisce la classifica completa dei gironi, o {} se non disponibile."""
+    if not GROUP_STANDINGS_PATH.exists():
+        return {}
+    with open(GROUP_STANDINGS_PATH, encoding="utf-8") as f:
         return json.load(f)
 
 

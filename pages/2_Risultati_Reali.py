@@ -3,9 +3,11 @@ import streamlit as st
 from src.storage.json_storage import (
     load_results,
     load_group_rankings,
+    load_group_standings,
     load_rankings_source,
     save_results,
     save_group_rankings,
+    save_group_standings,
     save_rankings_source,
 )
 from src.models.tournament import load_fixtures, get_knockout_slots
@@ -16,6 +18,7 @@ st.title("📡 Risultati Reali")
 _, groups = load_fixtures()
 knockout_slots = get_knockout_slots()
 actual_rankings = load_group_rankings()
+actual_standings = load_group_standings()
 rankings_source = load_rankings_source()
 results = load_results()
 
@@ -27,10 +30,10 @@ st.caption("Fonte: API-Football (api-sports.io)")
 run_scrape = st.button("🔄 Scarica classifiche da API-Football")
 
 if run_scrape:
-    from src.scraper.results_scraper import scrape_group_rankings, DefaultRankingsUsed
+    from src.scraper.results_scraper import scrape_group_data, DefaultRankingsUsed
     with st.spinner("Download classifiche in corso…"):
         try:
-            scraped = scrape_group_rankings()
+            scraped, standings = scrape_group_data()
             missing = [g for g in "ABCDEFGHIJKL" if g not in scraped]
             if missing:
                 st.error(
@@ -40,12 +43,14 @@ if run_scrape:
                 )
             else:
                 save_group_rankings(scraped)
+                save_group_standings(standings)
                 save_rankings_source("api")
                 st.session_state["scrape_done"] = True
                 st.success("Classifiche aggiornate per tutti i 12 gironi.")
                 st.rerun()
         except DefaultRankingsUsed as e:
             save_group_rankings(e.rankings)
+            save_group_standings(e.standings)
             save_rankings_source("default")
             st.session_state["scrape_done"] = True
             st.rerun()
@@ -79,11 +84,19 @@ if actual_rankings and st.session_state.get("scrape_done"):
         row_ids = group_ids[row_start : row_start + cols_per_row]
         cols = st.columns(cols_per_row)
         for col, gid in zip(cols, row_ids):
-            ranking = actual_rankings.get(gid, [])
-            rows = "\n".join(
-                f"| {pos}° | {team or '—'} | 0 |"
-                for pos, team in enumerate(ranking, 1)
-            )
+            standing = actual_standings.get(gid)
+            if standing:
+                rows = "\n".join(
+                    f"| {r['pos']}° | {r['squadra'] or '—'} | {r['punti']} |"
+                    for r in standing
+                )
+            else:
+                # Fallback: solo posizioni (nessun punteggio disponibile)
+                ranking = actual_rankings.get(gid, [])
+                rows = "\n".join(
+                    f"| {pos}° | {team or '—'} | 0 |"
+                    for pos, team in enumerate(ranking, 1)
+                )
             col.markdown(
                 f"**Girone {gid}**\n\n"
                 "| Pos | Squadra | Pt |\n"

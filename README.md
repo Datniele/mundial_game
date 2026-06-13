@@ -27,13 +27,14 @@ mondiali/
 │   └── results/
 │       ├── results.json               # Risultati reali knockout {match_id: {home_goals, away_goals, played}}
 │       ├── group_rankings.json        # Classifiche finali dei gironi {girone: [1°, 2°, 3°, 4°]}
+│       ├── group_standings.json       # Classifiche complete con punti e statistiche {girone: [{pos, squadra, punti, ...}]}
 │       └── group_rankings_meta.json   # Provenienza classifiche gironi: "api" | "default" | "manual"
 │
 └── src/
     ├── models/                        # Dataclass: Match, Result, Prediction, Participant
     ├── scoring/                       # Motore di calcolo punteggi
     ├── storage/                       # Lettura/scrittura JSON su disco
-    └── scraper/                       # Scraping classifiche gironi via football-data.org
+    └── scraper/                       # Lettura classifiche gironi dalle standings di football-data.org
 ```
 
 ---
@@ -153,14 +154,16 @@ La pagina **Risultati Reali** consente di caricare i dati reali del torneo in du
 
 ### Scraping automatico (classifiche gironi)
 
-Tramite il pulsante **Scarica classifiche da API-Football** lo scraper interroga football-data.org e popola `group_rankings.json` automaticamente. Dopo ogni tentativo viene mostrata una tabella con le classifiche caricate (visibile solo nella sessione corrente dopo aver premuto il pulsante).
+Tramite il pulsante **Scarica classifiche da API-Football** lo scraper interroga football-data.org (endpoint `GET /competitions/WC/standings`) e popola `group_rankings.json` e `group_standings.json` automaticamente. Dopo ogni tentativo viene mostrata una tabella con le classifiche caricate (posizione **e punti**), visibile solo nella sessione corrente dopo aver premuto il pulsante.
+
+> Le classifiche vengono lette **direttamente dalle standings ufficiali** dell'API: posizione e punti sono già quelli FIFA (tie-breaker inclusi), non vengono ricalcolati partita per partita. I nomi delle squadre sono ricondotti ai nomi canonici di `fixtures.json` per restare coerenti con i pronostici e con il calcolo dei punteggi.
 
 Comportamento in base alla risposta API:
 
 | Caso | Risultato |
 |---|---|
-| Dati presenti e completi | Salva, mostra le classifiche e messaggio di successo |
-| API senza dati GROUP_STAGE (torneo non iniziato) | Salva l'ordine standard da `fixtures.json` e mostra un avviso |
+| Standings presenti e complete | Salva, mostra le classifiche con i punti e messaggio di successo |
+| API senza standings o gironi a 0 partite (torneo non iniziato) | Salva l'ordine standard da `fixtures.json` e mostra un avviso |
 | Dati parziali (gironi mancanti) | Non salva, mostra errore con i gironi mancanti |
 | API key non configurata | Mostra errore con istruzioni di configurazione |
 
@@ -196,6 +199,7 @@ data/participants/registry.json         ← registro partecipanti
 data/predictions/mario_rossi.json       ← pronostici del partecipante
 data/results/results.json               ← risultati reali knockout {match_id: {home_goals, away_goals, played}}
 data/results/group_rankings.json        ← classifiche finali gironi {girone: [1°, 2°, 3°, 4°]}
+data/results/group_standings.json       ← classifiche complete con punti/statistiche {girone: [{pos, squadra, punti, ...}]}
 data/results/group_rankings_meta.json   ← provenienza classifiche: "api" | "default" | "manual"
 data/fixtures/fixtures.json             ← calendario ufficiale (non modificare a mano)
 ```
