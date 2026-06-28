@@ -93,7 +93,7 @@ def knockout_consensus(
 
     Considera, per ogni slot, solo i partecipanti che lo hanno pronosticato.
     """
-    if metric not in ("outcome", "exact"):
+    if metric not in ("outcome", "exact", "advances"):
         raise ValueError(f"metric sconosciuta: {metric!r}")
 
     results: List[EventConsensus] = []
@@ -108,10 +108,15 @@ def knockout_consensus(
                 outcome = _outcome(pred.home_goals, pred.away_goals)
                 keys.append(outcome)
                 values.append(outcome)
-            else:
+            elif metric == "exact":
                 score = (pred.home_goals, pred.away_goals)
                 keys.append(score)
                 values.append(score)
+            else:  # advances
+                if pred.advances is None:
+                    continue
+                keys.append(pred.advances)
+                values.append(pred.advances)
         ec = _consensus(mid, keys, values)
         if ec is not None:
             results.append(ec)
