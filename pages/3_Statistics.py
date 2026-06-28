@@ -112,7 +112,7 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
     with tabs[tab_idx]:
         st.subheader(f"Consensus — {phase_label}")
         st.caption(
-            "One event = one match slot. Two metrics: **outcome** (1/X/2) and **exact score**."
+            "One event = one match slot. Metric: **who advances** (chi passa il turno)."
         )
 
         match_ids = [mid for pk in phase_keys for mid in ko_ids.get(pk, [])]
@@ -120,34 +120,43 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
             st.info("No matches defined for this phase yet.")
             continue
 
-        outcome_events = knockout_consensus(participants, match_ids, "outcome")
-        exact_events = knockout_consensus(participants, match_ids, "exact")
+        adv_events = knockout_consensus(participants, match_ids, "advances")
 
-        if not outcome_events:
-            st.info("We need at least 2 players who've predicted the same match.")
+        if not adv_events:
+            st.info("We need at least 2 players who've picked who advances in the same match.")
             continue
 
-        m1, m2 = st.columns(2)
-        m1.metric("Outcomes everyone agrees on", f"{unanimous_count(outcome_events)}/{len(outcome_events)}")
-        m2.metric(
-            "Exact scores everyone agrees on",
-            f"{unanimous_count(exact_events)}/{len(exact_events)}",
+        def _team_for(label: str, side: str) -> str:
+            entry = bracket.get(label) or {}
+            if side == "home":
+                return entry.get("home") or "Team 1"
+            return entry.get("away") or "Team 2"
+
+        st.metric(
+            "Who-advances picks everyone agrees on",
+            f"{unanimous_count(adv_events)}/{len(adv_events)}",
         )
 
-        st.markdown("**Outcome (1/X/2)**")
-        _callouts(outcome_events, _fmt_outcome)
-        st.markdown("**Exact score**")
-        _callouts(exact_events, _fmt_score)
+        top = most_shared(adv_events)
+        bottom = least_shared(adv_events)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.success(
+                f"🟢 **Crowd favourite: {slot_label(top.label, bracket)}** — {_frac(top)} agree"
+                f"\n\nAdvances: {_team_for(top.label, top.top_value)}"
+            )
+        with c2:
+            st.error(
+                f"🔴 **Biggest squabble: {slot_label(bottom.label, bracket)}** — {_frac(bottom)} agree"
+                f"\n\nAdvances: {_team_for(bottom.label, bottom.top_value)}"
+            )
 
-        exact_by_label = {ec.label: ec for ec in exact_events}
         df = pd.DataFrame([
             {
-                "Slot": slot_label(o.label, bracket),
-                "Outcome — most shared": _frac(o),
-                "Most common outcome": _fmt_outcome(o.top_value),
-                "Score — most shared": _frac(exact_by_label[o.label]),
-                "Most common score": _fmt_score(exact_by_label[o.label].top_value),
+                "Slot": slot_label(ec.label, bracket),
+                "Who-advances — most shared": _frac(ec),
+                "Most common pick": _team_for(ec.label, ec.top_value),
             }
-            for o in outcome_events
+            for ec in adv_events
         ])
         st.dataframe(df, use_container_width=True, hide_index=True)
