@@ -256,7 +256,7 @@ else:
             adv_current = pred.advances if (pred and pred.advances) else None
             adv_idx = (0 if adv_current == "home" else 1) if adv_current in ("home", "away") else None
             sel_adv = ctrl[4].radio(
-                "Passa il turno", adv_opts, index=adv_idx,
+                "Who advances", adv_opts, index=adv_idx,
                 key=f"adv_{match_id}", horizontal=True,
             )
             adv_value = None

@@ -183,7 +183,7 @@ def _phase_export(participant, label: str, check, group_ids: set) -> dict | None
             return None
         return {"name": participant.name, "group_rankings": participant.group_rankings}
     match_preds = {
-        mid: {"home_goals": p.home_goals, "away_goals": p.away_goals}
+        mid: {"home_goals": p.home_goals, "away_goals": p.away_goals, "advances": p.advances}
         for mid, p in participant.match_predictions.items()
         if check(mid, group_ids)
     }
