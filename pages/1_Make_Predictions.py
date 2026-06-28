@@ -5,6 +5,7 @@ from src.models.match import MatchPrediction
 from src.models.tournament import load_fixtures, get_knockout_slots, get_knockout_match_ids_by_phase
 from src.storage.json_storage import (
     is_phase_locked,
+    load_knockout_bracket,
     load_participant,
     load_registry,
     merge_participant,
@@ -181,6 +182,7 @@ else:
 
     new_preds: dict = {}
     team_opts = ["TBD"] + all_teams
+    bracket = load_knockout_bracket()
 
     for slot_cfg in slot_configs:
         prefix = slot_cfg["prefix"]
@@ -204,17 +206,25 @@ else:
         h[3].markdown("**Goals**")
         h[4].markdown("**Team 2**")
 
-        for i in range(1, n_slots + 1):
-            match_id = f"{prefix}{i:02d}"
+        match_ids = [f"{prefix}{i:02d}" for i in range(1, n_slots + 1)]
+        # Mostra in ordine cronologico se il bracket conosce le date; altrimenti ordine slot.
+        match_ids.sort(key=lambda mid: (bracket.get(mid, {}).get("utc_date") or "", mid))
+
+        for match_id in match_ids:
             pred = participant.match_predictions.get(match_id)
             home_g = pred.home_goals if pred else 0
             away_g = pred.away_goals if pred else 0
+            entry = bracket.get(match_id)
+            determined = bool(entry and entry.get("determined"))
 
             cols = st.columns([3, 0.8, 0.5, 0.8, 3])
-            cols[0].selectbox(
-                f"t1_{match_id}", team_opts,
-                key=f"t1_{match_id}", label_visibility="collapsed",
-            )
+            if determined:
+                cols[0].markdown(f"**{entry['home']}**")
+            else:
+                cols[0].selectbox(
+                    f"t1_{match_id}", team_opts,
+                    key=f"t1_{match_id}", label_visibility="collapsed",
+                )
             g1 = cols[1].number_input(
                 f"g1_{match_id}", min_value=0, max_value=20, value=home_g, step=1,
                 key=f"g1_{match_id}", label_visibility="collapsed",
@@ -224,10 +234,13 @@ else:
                 f"g2_{match_id}", min_value=0, max_value=20, value=away_g, step=1,
                 key=f"g2_{match_id}", label_visibility="collapsed",
             )
-            cols[4].selectbox(
-                f"t2_{match_id}", team_opts,
-                key=f"t2_{match_id}", label_visibility="collapsed",
-            )
+            if determined:
+                cols[4].markdown(f"**{entry['away']}**")
+            else:
+                cols[4].selectbox(
+                    f"t2_{match_id}", team_opts,
+                    key=f"t2_{match_id}", label_visibility="collapsed",
+                )
             new_preds[match_id] = {"home_goals": int(g1), "away_goals": int(g2)}
 
         if len(slot_configs) > 1:
