@@ -136,20 +136,13 @@ st.info(
 
 st.markdown("---")
 
-# ── Flusso operativo ─────────────────────────────────────────────────────────
+# ── Due classifiche indipendenti ───────────────────────────────────────────────
 
-st.subheader("🔄 When the scores get updated")
+st.subheader("🧮 Two independent scores")
 st.markdown(
     """
-1. As matches are played, the real data is pulled **automatically from the API** into the
-   **Real Results** page (group standings and knockout results) — it's read-only, no manual entry.
-2. The **Leaderboard** page automatically recalculates and shows the fresh ranking,
-   with a separate tab for the group stage and for each knockout round.
-
-> Group and knockout predictions are scored **independently**: there's no single grand total,
-> just one leaderboard per phase.
-
-> **Deadlines.** Once the admin locks a phase, its predictions can no longer be changed.
-> You can still **see** your saved picks in **Make Predictions**, but they're read-only.
+The group stage and the knockout rounds are scored with **two separate systems**: there's no
+single grand total, just **one leaderboard per phase**. The group stage uses the *error-to-score*
+formula above; each knockout round uses the **C1 → C2 → C3** criteria.
 """
 )
