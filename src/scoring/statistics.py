@@ -89,7 +89,8 @@ def knockout_consensus(
     Args:
         participants: partecipanti da analizzare.
         match_ids: id degli slot della fase (es. ["S01", ..., "S16"]).
-        metric: "outcome" per l'esito (1/X/2) o "exact" per il risultato esatto.
+        metric: "outcome" per l'esito (1/X/2), "exact" per il risultato esatto,
+            "advances" per chi passa il turno (i pronostici senza advances sono ignorati).
 
     Considera, per ogni slot, solo i partecipanti che lo hanno pronosticato.
     """

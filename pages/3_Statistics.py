@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 
 from src.storage.json_storage import load_all_participants, load_knockout_bracket
-from src.models.match import Outcome
 from src.models.tournament import get_knockout_match_ids_by_phase
 from src.scraper.knockout_bracket import slot_label
 from src.scoring.statistics import (
@@ -43,27 +42,20 @@ KNOCKOUT_PHASES = [
     (["finale_3posto", "finale"], "Final"),
 ]
 
-_OUTCOME_LABEL = {
-    Outcome.HOME: "1 (home win)",
-    Outcome.AWAY: "2 (away win)",
-    Outcome.DRAW: "X (draw)",
-}
-
-
 def _fmt_ranking(value) -> str:
     return " › ".join(value)
 
 
-def _fmt_outcome(value) -> str:
-    return _OUTCOME_LABEL.get(value, str(value))
-
-
-def _fmt_score(value) -> str:
-    return f"{value[0]}-{value[1]}"
-
-
 def _frac(ec: EventConsensus) -> str:
     return f"{ec.top_count}/{ec.total}"
+
+
+def _advancing_team(label: str, side: str) -> str:
+    """Nome della squadra che passa il turno per lo slot, o Team 1/Team 2 se non determinato."""
+    entry = bracket.get(label) or {}
+    if side == "home":
+        return entry.get("home") or "Team 1"
+    return entry.get("away") or "Team 2"
 
 
 def _callouts(events: list[EventConsensus], fmt) -> None:
@@ -126,12 +118,6 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
             st.info("We need at least 2 players who've picked who advances in the same match.")
             continue
 
-        def _team_for(label: str, side: str) -> str:
-            entry = bracket.get(label) or {}
-            if side == "home":
-                return entry.get("home") or "Team 1"
-            return entry.get("away") or "Team 2"
-
         st.metric(
             "Who-advances picks everyone agrees on",
             f"{unanimous_count(adv_events)}/{len(adv_events)}",
@@ -143,19 +129,19 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
         with c1:
             st.success(
                 f"🟢 **Crowd favourite: {slot_label(top.label, bracket)}** — {_frac(top)} agree"
-                f"\n\nAdvances: {_team_for(top.label, top.top_value)}"
+                f"\n\nAdvances: {_advancing_team(top.label, top.top_value)}"
             )
         with c2:
             st.error(
                 f"🔴 **Biggest squabble: {slot_label(bottom.label, bracket)}** — {_frac(bottom)} agree"
-                f"\n\nAdvances: {_team_for(bottom.label, bottom.top_value)}"
+                f"\n\nAdvances: {_advancing_team(bottom.label, bottom.top_value)}"
             )
 
         df = pd.DataFrame([
             {
                 "Slot": slot_label(ec.label, bracket),
                 "Who-advances — most shared": _frac(ec),
-                "Most common pick": _team_for(ec.label, ec.top_value),
+                "Most common pick": _advancing_team(ec.label, ec.top_value),
             }
             for ec in adv_events
         ])

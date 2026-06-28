@@ -218,6 +218,13 @@ for slot_cfg in knockout_slots:
                     "advances": adv_value,
                 }
 
+_missing_adv = [mid for mid, r in new_results.items() if r.get("advances") is None]
+if _missing_adv:
+    st.warning(
+        "Heads up: these played matches have no **who advances** set, so nobody can score C1 on them: "
+        + ", ".join(sorted(_missing_adv))
+    )
+
 if st.button("💾 Save knockout results", type="primary"):
     save_results(new_results)
     st.success("Knockout results saved.")
