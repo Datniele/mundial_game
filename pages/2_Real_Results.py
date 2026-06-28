@@ -1,6 +1,7 @@
 import streamlit as st
 
 from src.storage.json_storage import (
+    load_knockout_bracket,
     load_results,
     load_group_rankings,
     load_group_standings,
@@ -151,6 +152,8 @@ PHASE_LABELS = {
     "finale": "Final",
 }
 
+ko_bracket = load_knockout_bracket()
+
 new_results: dict = {}
 
 for slot_cfg in knockout_slots:
@@ -173,7 +176,11 @@ for slot_cfg in knockout_slots:
             existing = results.get(match_id)
             cols = st.columns([1, 3, 1, 0.5, 1, 3, 2])
             cols[0].write(match_id)
-            cols[1].text_input("sq1", value="", key=f"sq1_{match_id}", label_visibility="collapsed")
+            _entry = ko_bracket.get(match_id) or {}
+            cols[1].text_input(
+                "sq1", value=_entry.get("home") or "",
+                key=f"sq1_{match_id}", label_visibility="collapsed",
+            )
             g1 = cols[2].number_input(
                 "g1", min_value=0, max_value=20,
                 value=existing.home_goals if existing else 0,
@@ -185,7 +192,10 @@ for slot_cfg in knockout_slots:
                 value=existing.away_goals if existing else 0,
                 step=1, key=f"g2_{match_id}", label_visibility="collapsed",
             )
-            cols[5].text_input("sq2", value="", key=f"sq2_{match_id}", label_visibility="collapsed")
+            cols[5].text_input(
+                "sq2", value=_entry.get("away") or "",
+                key=f"sq2_{match_id}", label_visibility="collapsed",
+            )
             played = cols[6].checkbox(
                 "Played", value=bool(existing), key=f"played_{match_id}"
             )
