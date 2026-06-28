@@ -29,13 +29,14 @@ mondiali/
 │       ├── results.json               # Risultati reali knockout {match_id: {home_goals, away_goals, played}}
 │       ├── group_rankings.json        # Classifiche finali dei gironi {girone: [1°, 2°, 3°, 4°]}
 │       ├── group_standings.json       # Classifiche complete con punti e statistiche {girone: [{pos, squadra, punti, ...}]}
-│       └── group_rankings_meta.json   # Provenienza classifiche gironi: "api" | "default" | "manual"
+│       ├── group_rankings_meta.json   # Provenienza classifiche gironi: "api" | "default" | "manual"
+│       └── knockout_bracket.json      # Accoppiamenti knockout reali da API {slot_id: {home, away, utc_date, api_id, determined}}
 │
 └── src/
     ├── models/                        # Dataclass: Match, Result, Prediction, Participant
     ├── scoring/                       # Motore di calcolo punteggi + statistiche di consenso
     ├── storage/                       # Lettura/scrittura JSON su disco
-    └── scraper/                       # Lettura classifiche gironi dalle standings di football-data.org
+    └── scraper/                       # Classifiche gironi (standings) + accoppiamenti knockout (matches) da football-data.org
 ```
 
 ---
@@ -165,7 +166,7 @@ Lo stesso aggiornamento avviene all'apertura della pagina **Leaderboard**: prima
 
 > Le classifiche vengono lette **direttamente dalle standings ufficiali** dell'API: posizione e punti sono già quelli FIFA (tie-breaker inclusi), non vengono ricalcolati partita per partita. I nomi delle squadre sono ricondotti ai nomi canonici di `fixtures.json` per restare coerenti con i pronostici e con il calcolo dei punteggi.
 
-> Lo scraper copre **solo le classifiche dei gironi**; i risultati delle fasi a eliminazione diretta restano a inserimento manuale.
+> Lo scraper copre le **classifiche dei gironi** (automatiche all'apertura) e gli **accoppiamenti knockout** (su trigger Admin, vedi pagina Admin). I **risultati** delle fasi a eliminazione diretta restano a inserimento manuale.
 
 Comportamento in base alla risposta API:
 
@@ -206,7 +207,7 @@ Per ogni fase la pagina mostra:
 - una **tabella** di tutti gli eventi con il livello di consenso `X/N`
 
 > La fase a gironi richiede la classifica completa (i pronostici parziali sono esclusi dal conteggio).
-> Gli slot knockout mostrano l'id (es. `S01`) perché le squadre non sono note finché non escono i risultati.
+> Gli slot knockout mostrano l'id (es. `S01`); una volta che l'Admin ha popolato gli accoppiamenti da API, accanto all'id compaiono le squadre reali (es. `S01 — France vs Sweden`).
 
 La logica vive in [`src/scoring/statistics.py`](src/scoring/statistics.py) (funzioni pure, testate in
 [`tests/test_statistics.py`](tests/test_statistics.py)).
@@ -220,6 +221,7 @@ La pagina **Admin Settings** (`9_Admin_Settings.py`) è riservata all'amministra
 - **Gestione partecipanti**: elenco con copertura fasi (classifiche gironi + fasi knockout) ed eliminazione singola
 - **Upload predictions from a file**: upload di un file `.json` esportato dall'app; i dati vengono uniti con quelli già presenti tramite merge automatico
 - **Download predictions by phase**: esporta in JSON i pronostici di tutti i partecipanti per una fase selezionata
+- **Populate knockout pairings from API**: scarica da football-data.org (endpoint `GET /competitions/WC/matches`) gli accoppiamenti reali di **una** fase a eliminazione diretta selezionata e popola gli slot di previsione con le squadre vere. Lo scarico è **manuale e per fase**: si popolano i sedicesimi quando il loro tabellone è definito, poi gli ottavi a sedicesimi conclusi, e così via. Se gli accoppiamenti di una fase non sono ancora determinati dall'API, l'operazione **avvisa e non salva nulla**. La fonte è il file `data/results/knockout_bracket.json`, letto dalle altre pagine senza ulteriori chiamate API.
 - **Reset completo**: elimina tutti i pronostici e svuota il registry (richiede conferma esplicita)
 
 > **Formati accettati dall'upload.** Il caricamento accetta sia l'export di un **singolo partecipante** (`{"name": ..., "match_predictions": ..., "group_rankings": ...}`) sia l'**export per fase** prodotto dal download (`{"phase": ..., "participants": [...]}`, con più partecipanti). In entrambi i casi i pronostici vengono uniti con quelli esistenti tramite merge incrementale per fase. Un file scaricato con «Download predictions by phase» può quindi essere ricaricato direttamente.
