@@ -17,6 +17,8 @@ from src.storage.json_storage import (
     save_group_standings,
     save_rankings_source,
 )
+from src.scraper.knockout_bracket import fetch_matches, build_phase_bracket
+from src.storage.json_storage import merge_knockout_bracket
 
 _ALL_GROUPS = "ABCDEFGHIJKL"
 
@@ -63,3 +65,33 @@ def refresh_group_standings_from_api() -> RefreshOutcome:
         )
     except Exception as e:  # noqa: BLE001 — qualsiasi errore va riportato alla pagina
         return RefreshOutcome(status="error", message=f"Live refresh failed: {e}")
+
+
+def refresh_knockout_bracket_from_api(phase: str) -> RefreshOutcome:
+    """Scarica gli accoppiamenti di UNA fase knockout e li salva (merge) su disco.
+
+    Salva solo se tutti gli accoppiamenti della fase sono determinati; altrimenti
+    avvisa senza scrivere nulla. Non solleva eccezioni: ogni errore diventa un
+    RefreshOutcome di stato "error".
+    """
+    try:
+        payload = fetch_matches()
+        bracket = build_phase_bracket(payload, phase)
+        if not bracket:
+            return RefreshOutcome(
+                status="error",
+                message="The API has no matches for this phase yet — nothing saved.",
+            )
+        undetermined = [sid for sid, e in bracket.items() if not e["determined"]]
+        if undetermined:
+            return RefreshOutcome(
+                status="error",
+                message="Pairings for this phase aren’t determined yet — nothing saved.",
+            )
+        merge_knockout_bracket(bracket)
+        return RefreshOutcome(
+            status="api",
+            message=f"{len(bracket)} pairings populated from the API.",
+        )
+    except Exception as e:  # noqa: BLE001 — qualsiasi errore va riportato alla pagina
+        return RefreshOutcome(status="error", message=f"Bracket refresh failed: {e}")

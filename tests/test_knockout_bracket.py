@@ -78,3 +78,43 @@ def test_slot_label_falls_back_to_id():
     assert kb.slot_label("S99", {}) == "S99"
     bracket = kb.build_phase_bracket(_SAMPLE, "ottavi")
     assert kb.slot_label("O01", bracket) == "O01"  # non determinato -> solo id
+
+
+from src.scraper import live_refresh
+
+
+def test_refresh_saves_when_all_determined(monkeypatch):
+    payload = {"matches": [
+        {"id": 1, "stage": "LAST_32", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}},
+    ]}
+    captured = {}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "merge_knockout_bracket",
+                        lambda b: captured.update(b))
+    outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
+    assert outcome.status == "api"
+    assert "S01" in captured
+
+
+def test_refresh_skips_when_undetermined(monkeypatch):
+    payload = {"matches": [
+        {"id": 1, "stage": "LAST_16", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": None}, "awayTeam": {"name": None}},
+    ]}
+    called = {"merged": False}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "merge_knockout_bracket",
+                        lambda b: called.update(merged=True))
+    outcome = live_refresh.refresh_knockout_bracket_from_api("ottavi")
+    assert outcome.status == "error"
+    assert called["merged"] is False
+
+
+def test_refresh_reports_error_on_exception(monkeypatch):
+    def boom():
+        raise RuntimeError("429 Too Many Requests")
+    monkeypatch.setattr(live_refresh, "fetch_matches", boom)
+    outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
+    assert outcome.status == "error"
+    assert "429" in outcome.message
