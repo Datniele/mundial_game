@@ -17,7 +17,7 @@ class GroupStageScore:
 class KnockoutRoundScore:
     name: str
     correct_advances: int   # C1 — chi passa il turno corretto (higher = better)
-    correct_outcomes: int   # C2 — esito 90' (1/X/2) corretto (higher = better)
+    exact_scores: int       # C2 — risultati esatti (higher = better)
     goal_diff_error: int    # C3 — errore differenza reti (lower = better)
 
 
@@ -66,19 +66,19 @@ def score_knockout_round(
     """
     Per ogni partecipante con previsioni per i match_ids dati:
       C1 = passaggi del turno corretti (pred.advances == result.advances)
-      C2 = esiti 90' corretti (pred.outcome_90 == result.outcome)
+      C2 = risultati esatti (home_goals e away_goals previsti == reali)
       C3 = somma |diff_reti_predetta - diff_reti_reale| per ogni partita
 
     Ordinamento: C1 desc, C2 desc, C3 asc.
     Vengono valutate solo le partite con sia la previsione che il risultato reale.
-    I campi outcome_90/advances a None non guadagnano C1/C2.
+    Il campo advances a None non guadagna C1.
     """
     scores = []
     for p in participants:
         if not any(mid in p.match_predictions for mid in match_ids):
             continue
         correct_advances = 0
-        correct_outcomes = 0
+        exact_scores = 0
         goal_diff_error = 0
         for mid in match_ids:
             pred = p.match_predictions.get(mid)
@@ -88,15 +88,15 @@ def score_knockout_round(
             if pred.advances is not None and result.advances is not None \
                     and pred.advances == result.advances:
                 correct_advances += 1
-            if pred.outcome_90 is not None and pred.outcome_90 == result.outcome:
-                correct_outcomes += 1
+            if pred.home_goals == result.home_goals and pred.away_goals == result.away_goals:
+                exact_scores += 1
             pred_diff = pred.home_goals - pred.away_goals
             actual_diff = result.home_goals - result.away_goals
             goal_diff_error += abs(pred_diff - actual_diff)
         scores.append(KnockoutRoundScore(
             name=p.name,
             correct_advances=correct_advances,
-            correct_outcomes=correct_outcomes,
+            exact_scores=exact_scores,
             goal_diff_error=goal_diff_error,
         ))
-    return sorted(scores, key=lambda s: (-s.correct_advances, -s.correct_outcomes, s.goal_diff_error))
+    return sorted(scores, key=lambda s: (-s.correct_advances, -s.exact_scores, s.goal_diff_error))

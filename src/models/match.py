@@ -18,16 +18,6 @@ class Outcome(str, Enum):
     AWAY = "away"
     DRAW = "draw"
 
-    @property
-    def token(self) -> str:
-        """Rappresentazione 1/X/2 dell'esito."""
-        return {"home": "1", "draw": "X", "away": "2"}[self.value]
-
-    @classmethod
-    def from_token(cls, token: str) -> "Outcome":
-        """Costruisce un Outcome dal token 1/X/2."""
-        return {"1": cls.HOME, "X": cls.DRAW, "2": cls.AWAY}[token]
-
 
 @dataclass
 class Match:
@@ -65,8 +55,7 @@ class MatchPrediction:
     match_id: str
     home_goals: int
     away_goals: int
-    outcome_90: Optional["Outcome"] = None  # esito esplicito 1/X/2 a 90'
-    advances: Optional[str] = None           # "home" | "away" — chi passa il turno
+    advances: Optional[str] = None  # "home" | "away" — chi passa il turno
 
     @property
     def outcome(self) -> Outcome:

@@ -1,7 +1,7 @@
 import streamlit as st
 
 from src.models.participant import Participant
-from src.models.match import MatchPrediction, Outcome
+from src.models.match import MatchPrediction
 from src.models.tournament import load_fixtures, get_knockout_slots, get_knockout_match_ids_by_phase
 from src.storage.json_storage import (
     is_phase_locked,
@@ -131,7 +131,6 @@ def _save_knockout(new_preds: dict) -> None:
                 match_id=mid,
                 home_goals=v["home_goals"],
                 away_goals=v["away_goals"],
-                outcome_90=Outcome.from_token(v["outcome_90"]) if v.get("outcome_90") else None,
                 advances=v.get("advances"),
             )
             for mid, v in new_preds.items()
@@ -247,19 +246,11 @@ else:
                     f"t2_{match_id}", team_opts,
                     key=f"t2_{match_id}", label_visibility="collapsed",
                 )
-            # Riga 2: esito 90' (1/X/2) e chi passa il turno — sempre manuali
+            # Riga 2: chi passa il turno (indipendente dal risultato)
             team1_label = entry["home"] if determined else "Team 1"
             team2_label = entry["away"] if determined else "Team 2"
 
             ctrl = st.columns([3, 0.8, 0.5, 0.8, 3])
-
-            out_opts = ["1", "X", "2"]
-            out_current = pred.outcome_90.token if (pred and pred.outcome_90) else None
-            out_idx = out_opts.index(out_current) if out_current in out_opts else None
-            sel_out = ctrl[0].radio(
-                "Esito 90'", out_opts, index=out_idx,
-                key=f"out_{match_id}", horizontal=True,
-            )
 
             adv_opts = [team1_label, team2_label]
             adv_current = pred.advances if (pred and pred.advances) else None
@@ -277,7 +268,6 @@ else:
             new_preds[match_id] = {
                 "home_goals": int(g1),
                 "away_goals": int(g2),
-                "outcome_90": sel_out,   # token "1"/"X"/"2" o None
                 "advances": adv_value,   # "home"/"away" o None
             }
 

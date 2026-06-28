@@ -133,7 +133,7 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
                 "Pos": i,
                 "Player": s.name,
                 "C1 — Who advances": s.correct_advances,
-                "C2 — Outcome (90')": s.correct_outcomes,
+                "C2 — Exact scores": s.exact_scores,
                 "C3 — Goal-diff error": s.goal_diff_error,
             }
             for i, s in enumerate(scores, 1)
