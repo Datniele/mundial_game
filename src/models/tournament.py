@@ -5,6 +5,10 @@ from src.models.match import Match, Phase
 
 FIXTURES_PATH = Path(__file__).parent.parent.parent / "data" / "fixtures" / "fixtures.json"
 
+# Slot knockout esclusi dal gioco: partite disputate prima che i pronostici fossero
+# disponibili, quindi non si pronosticano né concorrono al punteggio/statistiche.
+EXCLUDED_KNOCKOUT_SLOTS: set[str] = {"S03"}  # South Africa vs Canada (giocata il 2026-06-28)
+
 
 def load_fixtures() -> tuple[Dict[str, Match], Dict[str, List[str]]]:
     """Returns (matches_by_id, groups_by_name)."""
@@ -46,6 +50,10 @@ def get_knockout_match_ids_by_phase() -> Dict[str, List[str]]:
     result: Dict[str, List[str]] = {}
     for slot in get_knockout_slots():
         phase = slot["phase"]
-        ids = [f"{slot['prefix']}{i:02d}" for i in range(1, slot["slots"] + 1)]
+        ids = [
+            f"{slot['prefix']}{i:02d}"
+            for i in range(1, slot["slots"] + 1)
+            if f"{slot['prefix']}{i:02d}" not in EXCLUDED_KNOCKOUT_SLOTS
+        ]
         result.setdefault(phase, []).extend(ids)
     return result

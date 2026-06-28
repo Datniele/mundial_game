@@ -2,7 +2,12 @@ import streamlit as st
 
 from src.models.participant import Participant
 from src.models.match import MatchPrediction
-from src.models.tournament import load_fixtures, get_knockout_slots, get_knockout_match_ids_by_phase
+from src.models.tournament import (
+    load_fixtures,
+    get_knockout_slots,
+    get_knockout_match_ids_by_phase,
+    EXCLUDED_KNOCKOUT_SLOTS,
+)
 from src.storage.json_storage import (
     is_phase_locked,
     load_knockout_bracket,
@@ -211,7 +216,10 @@ else:
         h[3].markdown("**Goals**")
         h[4].markdown("**Team 2**")
 
-        match_ids = [f"{prefix}{i:02d}" for i in range(1, n_slots + 1)]
+        match_ids = [
+            f"{prefix}{i:02d}" for i in range(1, n_slots + 1)
+            if f"{prefix}{i:02d}" not in EXCLUDED_KNOCKOUT_SLOTS
+        ]
         # Mostra in ordine cronologico se il bracket conosce le date; altrimenti ordine slot.
         match_ids.sort(key=lambda mid: (bracket.get(mid, {}).get("utc_date") or "", mid))
 

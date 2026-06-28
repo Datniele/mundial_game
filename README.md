@@ -130,6 +130,7 @@ La pagina **Make Predictions** permette a ogni partecipante di registrarsi e com
 
 > Per la fase a gironi si inserisce **solo il posizionamento finale** (1°→4° posto), non i risultati delle singole partite.
 > Per le fasi a eliminazione, risultato esatto e passaggio del turno si pronosticano in modo **indipendente**: non devono per forza concordare (es. pareggio nei 90' ma qualificazione ai rigori).
+> Eventuali slot già disputati prima dell'apertura dei pronostici sono esclusi sia dalla pagina Make Predictions sia dal conteggio (vedi `EXCLUDED_KNOCKOUT_SLOTS` in [`src/models/tournament.py`](src/models/tournament.py)).
 
 Il salvataggio è **incrementale**: ogni "Salva" aggiorna solo la fase corrente; le altre restano invariate. È possibile tornare in momenti diversi per completare le fasi successive.
 
