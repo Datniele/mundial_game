@@ -138,3 +138,76 @@ def test_refresh_reports_error_on_exception(monkeypatch):
     outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
     assert outcome.status == "error"
     assert "429" in outcome.message
+
+
+# ── build_knockout_results ──────────────────────────────────────────────────
+
+def _finished(api_id, stage, home, away, hg, ag, winner):
+    return {
+        "id": api_id, "stage": stage, "utcDate": "x", "status": "FINISHED",
+        "homeTeam": {"name": home}, "awayTeam": {"name": away},
+        "score": {"winner": winner, "fullTime": {"home": hg, "away": ag}},
+    }
+
+
+def test_build_results_maps_finished_matches_to_slots():
+    payload = {"matches": [
+        _finished(200, "LAST_32", "France", "Sweden", 2, 1, "HOME_TEAM"),
+        _finished(100, "LAST_32", "Brazil", "Korea Republic", 0, 0, "AWAY_TEAM"),
+    ]}
+    res = kb.build_knockout_results(payload)
+    # ordinati per api_id: 100 -> S01, 200 -> S02
+    assert res["S01"] == {"home_goals": 0, "away_goals": 0, "played": True, "advances": "away"}
+    assert res["S02"] == {"home_goals": 2, "away_goals": 1, "played": True, "advances": "home"}
+
+
+def test_build_results_skips_unfinished_and_keeps_slot_index():
+    # S01 non finito, S02 finito: lo slot index resta allineato all'ordine api_id
+    payload = {"matches": [
+        {"id": 100, "stage": "LAST_32", "status": "TIMED",
+         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}, "score": {}},
+        _finished(200, "LAST_32", "Brazil", "Spain", 3, 1, "HOME_TEAM"),
+    ]}
+    res = kb.build_knockout_results(payload)
+    assert "S01" not in res
+    assert res["S02"]["home_goals"] == 3
+
+
+def test_build_results_draw_winner_has_no_advances():
+    payload = {"matches": [
+        _finished(100, "LAST_32", "France", "Sweden", 1, 1, "DRAW"),
+    ]}
+    res = kb.build_knockout_results(payload)
+    assert res["S01"]["advances"] is None
+
+
+def test_refresh_results_saves_and_reports(monkeypatch):
+    payload = {"matches": [
+        _finished(100, "LAST_32", "France", "Sweden", 2, 1, "HOME_TEAM"),
+    ]}
+    captured = {}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "save_results", lambda r: captured.update(r))
+    outcome = live_refresh.refresh_knockout_results_from_api()
+    assert outcome.status == "api"
+    assert captured["S01"]["advances"] == "home"
+
+
+def test_refresh_results_empty_reports_default(monkeypatch):
+    saved = {"called": False}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: {"matches": []})
+    monkeypatch.setattr(live_refresh, "save_results", lambda r: saved.update(called=True, value=r))
+    outcome = live_refresh.refresh_knockout_results_from_api()
+    assert outcome.status == "default"
+    # salva comunque (results.json riflette l'API: vuoto)
+    assert saved["called"] is True
+    assert saved["value"] == {}
+
+
+def test_refresh_results_reports_error_on_exception(monkeypatch):
+    def boom():
+        raise RuntimeError("429 Too Many Requests")
+    monkeypatch.setattr(live_refresh, "fetch_matches", boom)
+    outcome = live_refresh.refresh_knockout_results_from_api()
+    assert outcome.status == "error"
+    assert "429" in outcome.message

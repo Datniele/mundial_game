@@ -18,8 +18,8 @@ from src.storage.json_storage import (
     save_rankings_source,
 )
 from src.models.tournament import get_knockout_slots
-from src.scraper.knockout_bracket import fetch_matches, build_phase_bracket
-from src.storage.json_storage import merge_knockout_bracket
+from src.scraper.knockout_bracket import fetch_matches, build_phase_bracket, build_knockout_results
+from src.storage.json_storage import merge_knockout_bracket, save_results
 
 _ALL_GROUPS = "ABCDEFGHIJKL"
 
@@ -104,3 +104,28 @@ def refresh_knockout_bracket_from_api(phase: str) -> RefreshOutcome:
         )
     except Exception as e:  # noqa: BLE001 — qualsiasi errore va riportato alla pagina
         return RefreshOutcome(status="error", message=f"Bracket refresh failed: {e}")
+
+
+def refresh_knockout_results_from_api() -> RefreshOutcome:
+    """Scarica i risultati reali knockout dall'API e li salva (sovrascrive) su disco.
+
+    I risultati sono ricavati dai match FINISHED dell'endpoint /matches: non sono
+    modificabili a mano. Salva sempre lo stato corrente (anche vuoto, se nessuna
+    partita è ancora conclusa) così results.json riflette esattamente l'API. Non
+    solleva eccezioni: ogni errore diventa un RefreshOutcome di stato "error".
+    """
+    try:
+        payload = fetch_matches()
+        results = build_knockout_results(payload)
+        save_results(results)
+        if not results:
+            return RefreshOutcome(
+                status="default",
+                message="No knockout matches have finished yet.",
+            )
+        return RefreshOutcome(
+            status="api",
+            message=f"{len(results)} knockout results refreshed from the API.",
+        )
+    except Exception as e:  # noqa: BLE001 — qualsiasi errore va riportato alla pagina
+        return RefreshOutcome(status="error", message=f"Results refresh failed: {e}")

@@ -15,7 +15,7 @@ mondiali/
 │
 ├── pages/
 │   ├── 1_Make_Predictions.py          # Form di registrazione e inserimento pronostici
-│   ├── 2_Real_Results.py              # Scraping / inserimento manuale classifiche e risultati
+│   ├── 2_Real_Results.py              # Classifiche e risultati reali da API (sola lettura)
 │   ├── 3_Statistics.py                # Consenso tra i pronostici per ogni fase
 │   ├── 4_Leaderboard.py               # Leaderboard e dettaglio punteggi
 │   ├── 5_Rules.py                     # Regolamento e criteri di punteggio (sola lettura)
@@ -29,7 +29,7 @@ mondiali/
 │       ├── results.json               # Risultati reali knockout {match_id: {home_goals, away_goals, played}}
 │       ├── group_rankings.json        # Classifiche finali dei gironi {girone: [1°, 2°, 3°, 4°]}
 │       ├── group_standings.json       # Classifiche complete con punti e statistiche {girone: [{pos, squadra, punti, ...}]}
-│       ├── group_rankings_meta.json   # Provenienza classifiche gironi: "api" | "default" | "manual"
+│       ├── group_rankings_meta.json   # Provenienza classifiche gironi: "api" | "default"
 │       └── knockout_bracket.json      # Accoppiamenti knockout reali da API {slot_id: {home, away, utc_date, api_id, determined}}
 │
 └── src/
@@ -104,8 +104,8 @@ streamlit run Home.py
    (nelle classifiche gironi le squadre già selezionate non sono riproponibili)
          ↓
 4. Quando le partite vengono giocate, l'admin va su "Real Results"
-   → le classifiche gironi si aggiornano da sole via API all'apertura della pagina
-     (in alternativa si inseriscono manualmente)
+   → classifiche gironi e risultati knockout si aggiornano da soli via API
+     all'apertura della pagina (sola lettura, nessun inserimento manuale)
          ↓
 5. Vai su "Leaderboard": all'apertura le classifiche reali vengono riscaricate
    dall'API e la graduatoria è calcolata su dati freschi
@@ -155,19 +155,24 @@ Ogni partecipante che accede per la prima volta viene registrato in `data/partic
 
 ## Risultati reali — pagina admin
 
-La pagina **Real Results** consente di caricare i dati reali del torneo in due modi:
+La pagina **Real Results** è **interamente in sola lettura**: tutti i dati reali (classifiche gironi e risultati knockout) sono ricavati da football-data.org e **non sono modificabili a mano**.
 
-### Aggiornamento automatico all'apertura (classifiche gironi)
+### Aggiornamento automatico all'apertura (classifiche gironi + risultati knockout)
 
-Appena si apre la pagina **Real Results**, lo scraper interroga football-data.org (endpoint `GET /competitions/WC/standings`) e popola `group_rankings.json` e `group_standings.json` **senza bisogno di premere alcun tasto**. L'esito dell'aggiornamento (successo / ordine standard / dati parziali / errore) viene mostrato in cima alla pagina. Un pulsante **🔄 Refresh now** forza un nuovo scaricamento immediato.
+Appena si apre la pagina **Real Results**, lo scraper interroga football-data.org e popola **senza bisogno di premere alcun tasto**:
 
-Lo stesso aggiornamento avviene all'apertura della pagina **Leaderboard**: prima di calcolare la graduatoria le classifiche reali vengono riscaricate, così i punteggi sono sempre basati sui dati più recenti.
+- *Classifiche gironi* — endpoint `GET /competitions/WC/standings` → `group_rankings.json` e `group_standings.json`.
+- *Risultati knockout* — endpoint `GET /competitions/WC/matches` → `results.json`: per ogni partita **conclusa** (`status == FINISHED`) si ricavano il punteggio (`score.fullTime`) e **chi passa il turno** (`score.winner` → lato `home`/`away`). I match sono mappati sugli stessi slot `S01`/`O01`/… del bracket.
+
+L'esito di entrambi gli aggiornamenti viene mostrato in cima alla pagina; un pulsante **🔄 Refresh now** forza un nuovo scaricamento immediato (svuota entrambe le cache).
+
+Gli stessi aggiornamenti avvengono all'apertura della pagina **Leaderboard**: prima di calcolare la graduatoria, classifiche gironi e risultati knockout vengono riscaricati, così i punteggi sono sempre basati sui dati più recenti.
 
 > **Rate limit.** Il free tier consente 10 richieste/minuto e Streamlit ri-esegue lo script a ogni interazione. La chiamata all'API è quindi cachata con un **TTL di 60 secondi** (`st.cache_data`): la pagina è "live" a ogni visita ma i numerosi rerun entro un minuto riusano il dato già scaricato; il pulsante *Refresh now* svuota la cache quando serve un aggiornamento immediato. La logica condivisa vive in [`src/scraper/live_refresh.py`](src/scraper/live_refresh.py).
 
 > Le classifiche vengono lette **direttamente dalle standings ufficiali** dell'API: posizione e punti sono già quelli FIFA (tie-breaker inclusi), non vengono ricalcolati partita per partita. I nomi delle squadre sono ricondotti ai nomi canonici di `fixtures.json` per restare coerenti con i pronostici e con il calcolo dei punteggi.
 
-> Lo scraper copre le **classifiche dei gironi** (automatiche all'apertura) e gli **accoppiamenti knockout** (su trigger Admin, vedi pagina Admin). I **risultati** delle fasi a eliminazione diretta restano a inserimento manuale.
+> Lo scraper copre le **classifiche dei gironi** e i **risultati knockout** (entrambi automatici all'apertura), oltre agli **accoppiamenti knockout** del bracket (su trigger Admin, vedi pagina Admin).
 
 Comportamento in base alla risposta API:
 
@@ -178,14 +183,11 @@ Comportamento in base alla risposta API:
 | Dati parziali (gironi mancanti) | Non salva, mostra errore con i gironi mancanti |
 | API key non configurata | Mostra errore con istruzioni di configurazione |
 
-La provenienza dei dati (`"api"`, `"default"`, `"manual"`) viene salvata in `group_rankings_meta.json` e mostrata accanto al titolo della tabella. Se i dati provengono dall'ordine standard, viene mostrato un **avviso persistente** a ogni caricamento della pagina.
+La provenienza delle classifiche gironi (`"api"`, `"default"`) viene salvata in `group_rankings_meta.json` e mostrata accanto al titolo della tabella. Se i dati provengono dall'ordine standard, viene mostrato un **avviso persistente** a ogni caricamento della pagina.
 
-### Inserimento manuale
+### Risultati knockout — sola lettura
 
-- *Classifiche gironi*: 12 expander con 4 selectbox (1°→4°) per ogni girone
-- *Risultati knockout*: score delle partite dalla fase sedicesimi in poi
-
-> Per la fase a gironi vengono salvate solo le classifiche finali, non i risultati delle singole partite.
+I risultati delle fasi a eliminazione diretta sono mostrati in una tabella per fase (punteggio + squadra che passa il turno), ricavata da `results.json`. Non è previsto alcun inserimento manuale: la fonte è esclusivamente l'API. Una partita compare con punteggio e passaggio solo quando l'API la segna come conclusa.
 
 ---
 
@@ -241,7 +243,7 @@ data/predictions/mario_rossi.json       ← pronostici del partecipante
 data/results/results.json               ← risultati reali knockout {match_id: {home_goals, away_goals, played}}
 data/results/group_rankings.json        ← classifiche finali gironi {girone: [1°, 2°, 3°, 4°]}
 data/results/group_standings.json       ← classifiche complete con punti/statistiche {girone: [{pos, squadra, punti, ...}]}
-data/results/group_rankings_meta.json   ← provenienza classifiche: "api" | "default" | "manual"
+data/results/group_rankings_meta.json   ← provenienza classifiche: "api" | "default"
 data/fixtures/fixtures.json             ← calendario ufficiale (non modificare a mano)
 ```
 

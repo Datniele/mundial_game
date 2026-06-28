@@ -82,6 +82,46 @@ def build_phase_bracket(payload: dict, phase: str) -> Dict[str, dict]:
     return bracket
 
 
+def build_knockout_results(payload: dict) -> Dict[str, dict]:
+    """Risultati reali knockout dai match FINISHED dell'API, mappati sugli slot S01/O01/…
+
+    Funzione pura (nessuna rete). Per ogni fase a eliminazione ordina le partite per
+    `api_id` crescente (stessa chiave di build_phase_bracket, così gli slot coincidono),
+    poi per le sole partite concluse estrae:
+      - home_goals / away_goals dal punteggio `score.fullTime`
+      - advances ("home"/"away") da `score.winner`
+
+    Le partite non ancora concluse o senza punteggio non vengono incluse.
+    """
+    results: Dict[str, dict] = {}
+    for phase in STAGE_TO_PHASE.values():
+        slot_cfg = next((s for s in get_knockout_slots() if s["phase"] == phase), None)
+        if slot_cfg is None:
+            continue
+        prefix = slot_cfg["prefix"]
+        stages = [api for api, ph in STAGE_TO_PHASE.items() if ph == phase]
+        matches = [m for m in payload.get("matches", []) if m.get("stage") in stages]
+        matches.sort(key=lambda m: m.get("id", 0))
+        for i, m in enumerate(matches, 1):
+            if m.get("status") != "FINISHED":
+                continue
+            score = m.get("score") or {}
+            full_time = score.get("fullTime") or {}
+            home_g = full_time.get("home")
+            away_g = full_time.get("away")
+            if home_g is None or away_g is None:
+                continue
+            winner = score.get("winner")
+            advances = {"HOME_TEAM": "home", "AWAY_TEAM": "away"}.get(winner)
+            results[f"{prefix}{i:02d}"] = {
+                "home_goals": int(home_g),
+                "away_goals": int(away_g),
+                "played": True,
+                "advances": advances,
+            }
+    return results
+
+
 def slot_label(match_id: str, bracket: Dict[str, dict]) -> str:
     """'S01 — France vs Sweden' se l'accoppiamento è noto, altrimenti il solo id."""
     entry = bracket.get(match_id)
