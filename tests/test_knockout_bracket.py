@@ -84,9 +84,11 @@ from src.scraper import live_refresh
 
 
 def test_refresh_saves_when_all_determined(monkeypatch):
+    # sedicesimi = 16 slot: il bracket deve essere COMPLETO per essere salvato.
     payload = {"matches": [
-        {"id": 1, "stage": "LAST_32", "utcDate": "x", "status": "TIMED",
-         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}},
+        {"id": i, "stage": "LAST_32", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}}
+        for i in range(1, 17)
     ]}
     captured = {}
     monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
@@ -95,12 +97,30 @@ def test_refresh_saves_when_all_determined(monkeypatch):
     outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
     assert outcome.status == "api"
     assert "S01" in captured
+    assert len(captured) == 16
+
+
+def test_refresh_skips_when_bracket_incomplete(monkeypatch):
+    # Solo 1 dei 16 slot dei sedicesimi presenti (e determinato): non deve salvare.
+    payload = {"matches": [
+        {"id": 1, "stage": "LAST_32", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}},
+    ]}
+    called = {"merged": False}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "merge_knockout_bracket",
+                        lambda b: called.update(merged=True))
+    outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
+    assert outcome.status == "error"
+    assert called["merged"] is False
 
 
 def test_refresh_skips_when_undetermined(monkeypatch):
+    # ottavi = 8 slot tutti presenti ma con squadre non ancora note: non deve salvare.
     payload = {"matches": [
-        {"id": 1, "stage": "LAST_16", "utcDate": "x", "status": "TIMED",
-         "homeTeam": {"name": None}, "awayTeam": {"name": None}},
+        {"id": i, "stage": "LAST_16", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": None}, "awayTeam": {"name": None}}
+        for i in range(1, 9)
     ]}
     called = {"merged": False}
     monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)

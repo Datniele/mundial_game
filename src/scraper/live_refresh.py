@@ -17,6 +17,7 @@ from src.storage.json_storage import (
     save_group_standings,
     save_rankings_source,
 )
+from src.models.tournament import get_knockout_slots
 from src.scraper.knockout_bracket import fetch_matches, build_phase_bracket
 from src.storage.json_storage import merge_knockout_bracket
 
@@ -81,6 +82,14 @@ def refresh_knockout_bracket_from_api(phase: str) -> RefreshOutcome:
             return RefreshOutcome(
                 status="error",
                 message="The API has no matches for this phase yet — nothing saved.",
+            )
+        # Salva solo il bracket COMPLETO della fase: se l'API ne restituisce solo una
+        # parte (slot mancanti), non popolare per non lasciare slot misti reale/TBD.
+        expected = next((s["slots"] for s in get_knockout_slots() if s["phase"] == phase), None)
+        if expected is not None and len(bracket) != expected:
+            return RefreshOutcome(
+                status="error",
+                message="The full bracket for this phase isn’t available yet — nothing saved.",
             )
         undetermined = [sid for sid, e in bracket.items() if not e["determined"]]
         if undetermined:

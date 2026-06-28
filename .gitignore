@@ -19,6 +19,7 @@ env/
 data/predictions/
 data/results/results.json
 data/results/group_rankings.json
+data/results/knockout_bracket.json
 
 # Template Excel generato (si rigenera con create_template.py)
 template_pronostici.xlsx
