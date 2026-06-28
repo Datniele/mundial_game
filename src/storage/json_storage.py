@@ -136,7 +136,12 @@ def load_results() -> Dict[str, Result]:
     with open(RESULTS_PATH, encoding="utf-8") as f:
         raw = json.load(f)
     return {
-        mid: Result(match_id=mid, home_goals=v["home_goals"], away_goals=v["away_goals"])
+        mid: Result(
+            match_id=mid,
+            home_goals=v["home_goals"],
+            away_goals=v["away_goals"],
+            advances=v.get("advances"),
+        )
         for mid, v in raw.items()
         if v.get("played", False)
     }
