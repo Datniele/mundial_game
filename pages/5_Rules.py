@@ -141,12 +141,15 @@ st.markdown("---")
 st.subheader("🔄 When the scores get updated")
 st.markdown(
     """
-1. As matches are played, the admin loads the real data into the **Real Results** section
-   (group standings and knockout match results).
+1. As matches are played, the real data is pulled **automatically from the API** into the
+   **Real Results** page (group standings and knockout results) — it's read-only, no manual entry.
 2. The **Leaderboard** page automatically recalculates and shows the fresh ranking,
    with a separate tab for the group stage and for each knockout round.
 
 > Group and knockout predictions are scored **independently**: there's no single grand total,
 > just one leaderboard per phase.
+
+> **Deadlines.** Once the admin locks a phase, its predictions can no longer be changed.
+> You can still **see** your saved picks in **Make Predictions**, but they're read-only.
 """
 )
