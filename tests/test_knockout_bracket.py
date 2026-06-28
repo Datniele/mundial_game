@@ -173,6 +173,40 @@ def test_build_results_skips_unfinished_and_keeps_slot_index():
     assert res["S02"]["home_goals"] == 3
 
 
+def test_build_results_uses_regular_time_for_90min_score():
+    # Match deciso ai rigori: 90' = 1-1, fullTime 7-6 (include supplementari/rigori),
+    # vince home ai rigori. Il risultato esatto deve essere quello dei 90' (1-1).
+    payload = {"matches": [{
+        "id": 100, "stage": "LAST_32", "status": "FINISHED",
+        "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"},
+        "score": {
+            "winner": "HOME_TEAM", "duration": "PENALTY_SHOOTOUT",
+            "regularTime": {"home": 1, "away": 1},
+            "extraTime": {"home": 0, "away": 0},
+            "penalties": {"home": 6, "away": 5},
+            "fullTime": {"home": 7, "away": 6},
+        },
+    }]}
+    res = kb.build_knockout_results(payload)
+    assert res["S01"]["home_goals"] == 1
+    assert res["S01"]["away_goals"] == 1
+    assert res["S01"]["advances"] == "home"  # vincitore complessivo (rigori)
+
+
+def test_build_results_falls_back_to_fulltime_in_regular_duration():
+    # Match chiuso nei 90': nessun regularTime, fullTime è già il punteggio a 90'.
+    payload = {"matches": [{
+        "id": 100, "stage": "LAST_32", "status": "FINISHED",
+        "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"},
+        "score": {"winner": "AWAY_TEAM", "duration": "REGULAR",
+                  "fullTime": {"home": 0, "away": 2}},
+    }]}
+    res = kb.build_knockout_results(payload)
+    assert res["S01"]["home_goals"] == 0
+    assert res["S01"]["away_goals"] == 2
+    assert res["S01"]["advances"] == "away"
+
+
 def test_build_results_draw_winner_has_no_advances():
     payload = {"matches": [
         _finished(100, "LAST_32", "France", "Sweden", 1, 1, "DRAW"),

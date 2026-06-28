@@ -162,7 +162,7 @@ La pagina **Real Results** è **interamente in sola lettura**: tutti i dati real
 Appena si apre la pagina **Real Results**, lo scraper interroga football-data.org e popola **senza bisogno di premere alcun tasto**:
 
 - *Classifiche gironi* — endpoint `GET /competitions/WC/standings` → `group_rankings.json` e `group_standings.json`.
-- *Risultati knockout* — endpoint `GET /competitions/WC/matches` → `results.json`: per ogni partita **conclusa** (`status == FINISHED`) si ricavano il punteggio (`score.fullTime`) e **chi passa il turno** (`score.winner` → lato `home`/`away`). I match sono mappati sugli stessi slot `S01`/`O01`/… del bracket.
+- *Risultati knockout* — endpoint `GET /competitions/WC/matches` → `results.json`: per ogni partita **conclusa** (`status == FINISHED`) si ricavano il **punteggio dei 90 minuti** (`score.regularTime`, con fallback su `score.fullTime` per i match chiusi nei regolamentari) e **chi passa il turno** (`score.winner`, che include supplementari/rigori → lato `home`/`away`). I match sono mappati sugli stessi slot `S01`/`O01`/… del bracket.
 
 L'esito di entrambi gli aggiornamenti viene mostrato in cima alla pagina; un pulsante **🔄 Refresh now** forza un nuovo scaricamento immediato (svuota entrambe le cache).
 

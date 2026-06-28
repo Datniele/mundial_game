@@ -88,8 +88,10 @@ def build_knockout_results(payload: dict) -> Dict[str, dict]:
     Funzione pura (nessuna rete). Per ogni fase a eliminazione ordina le partite per
     `api_id` crescente (stessa chiave di build_phase_bracket, così gli slot coincidono),
     poi per le sole partite concluse estrae:
-      - home_goals / away_goals dal punteggio `score.fullTime`
-      - advances ("home"/"away") da `score.winner`
+      - home_goals / away_goals dei **90 minuti**: `score.regularTime` se presente
+        (match andato ai supplementari/rigori), altrimenti `score.fullTime` (match
+        chiuso nei regolamentari, dove fullTime è già il punteggio a 90').
+      - advances ("home"/"away") da `score.winner` (vincitore complessivo, rigori inclusi).
 
     Le partite non ancora concluse o senza punteggio non vengono incluse.
     """
@@ -106,9 +108,11 @@ def build_knockout_results(payload: dict) -> Dict[str, dict]:
             if m.get("status") != "FINISHED":
                 continue
             score = m.get("score") or {}
+            # 90 minuti: regularTime quando il match è andato oltre, altrimenti fullTime.
+            regular = score.get("regularTime") or {}
             full_time = score.get("fullTime") or {}
-            home_g = full_time.get("home")
-            away_g = full_time.get("away")
+            home_g = regular.get("home", full_time.get("home"))
+            away_g = regular.get("away", full_time.get("away"))
             if home_g is None or away_g is None:
                 continue
             winner = score.get("winner")
