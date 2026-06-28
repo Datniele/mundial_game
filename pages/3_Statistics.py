@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-from src.storage.json_storage import load_all_participants
+from src.storage.json_storage import load_all_participants, load_knockout_bracket
 from src.models.match import Outcome
 from src.models.tournament import get_knockout_match_ids_by_phase
+from src.scraper.knockout_bracket import slot_label
 from src.scoring.statistics import (
     EventConsensus,
     group_consensus,
@@ -28,6 +29,7 @@ def _ko_ids() -> dict:
 
 
 ko_ids = _ko_ids()
+bracket = load_knockout_bracket()
 
 if not participants:
     st.info("Nobody's here yet. Head over to **Make Your Predictions** to kick things off.")
@@ -140,7 +142,7 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
         exact_by_label = {ec.label: ec for ec in exact_events}
         df = pd.DataFrame([
             {
-                "Slot": o.label,
+                "Slot": slot_label(o.label, bracket),
                 "Outcome — most shared": _frac(o),
                 "Most common outcome": _fmt_outcome(o.top_value),
                 "Score — most shared": _frac(exact_by_label[o.label]),
