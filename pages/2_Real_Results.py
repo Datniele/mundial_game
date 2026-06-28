@@ -162,21 +162,24 @@ for slot_cfg in knockout_slots:
     label = PHASE_LABELS.get(slot_cfg["phase"], slot_cfg["phase"])
 
     with st.expander(label, expanded=False):
-        h = st.columns([1, 3, 1, 0.5, 1, 3, 2])
+        h = st.columns([1, 3, 1, 0.5, 1, 3, 2.5, 1.5])
         h[0].markdown("**ID**")
         h[1].markdown("**Team 1**")
         h[2].markdown("**Goals**")
         h[3].markdown("")
         h[4].markdown("**Goals**")
         h[5].markdown("**Team 2**")
-        h[6].markdown("**Played**")
+        h[6].markdown("**Advances**")
+        h[7].markdown("**Played**")
 
         for i in range(1, n_slots + 1):
             match_id = f"{prefix}{i:02d}"
             existing = results.get(match_id)
-            cols = st.columns([1, 3, 1, 0.5, 1, 3, 2])
+            cols = st.columns([1, 3, 1, 0.5, 1, 3, 2.5, 1.5])
             cols[0].write(match_id)
             _entry = ko_bracket.get(match_id) or {}
+            team1_label = _entry.get("home") or "Team 1"
+            team2_label = _entry.get("away") or "Team 2"
             cols[1].text_input(
                 "sq1", value=_entry.get("home") or "",
                 key=f"sq1_{match_id}", label_visibility="collapsed",
@@ -196,11 +199,24 @@ for slot_cfg in knockout_slots:
                 "sq2", value=_entry.get("away") or "",
                 key=f"sq2_{match_id}", label_visibility="collapsed",
             )
-            played = cols[6].checkbox(
+            adv_opts = [team1_label, team2_label]
+            existing_adv = existing.advances if existing else None
+            adv_idx = (0 if existing_adv == "home" else 1) if existing_adv in ("home", "away") else None
+            sel_adv = cols[6].radio(
+                "Advances", adv_opts, index=adv_idx,
+                key=f"adv_{match_id}", horizontal=True, label_visibility="collapsed",
+            )
+            adv_value = "home" if sel_adv == team1_label else ("away" if sel_adv == team2_label else None)
+            played = cols[7].checkbox(
                 "Played", value=bool(existing), key=f"played_{match_id}"
             )
             if played:
-                new_results[match_id] = {"home_goals": int(g1), "away_goals": int(g2), "played": True}
+                new_results[match_id] = {
+                    "home_goals": int(g1),
+                    "away_goals": int(g2),
+                    "played": True,
+                    "advances": adv_value,
+                }
 
 if st.button("💾 Save knockout results", type="primary"):
     save_results(new_results)
