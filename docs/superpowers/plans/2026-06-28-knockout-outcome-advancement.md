@@ -10,6 +10,12 @@
 
 **Spec:** `docs/superpowers/specs/2026-06-28-knockout-outcome-advancement-design.md`
 
+> **Revisione 2026-06-28.** Requisiti modificati in corso d'opera: niente esito 90' esplicito. Le predizioni
+> raccolgono solo **risultato esatto** + **passaggio del turno**; criteri **C1 = passaggio**, **C2 = risultati
+> esatti (conteggio)**, **C3 = errore differenza reti**. Dove i task sotto citano `outcome_90` o C2=esito, vale
+> invece: nessun campo `outcome_90`, C2 = conteggio risultati esatti. Make Predictions ha solo il radio "passa il
+> turno" (niente radio esito).
+
 ---
 
 ## Note di formato dati (riferimento per tutti i task)

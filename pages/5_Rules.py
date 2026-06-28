@@ -93,19 +93,21 @@ st.subheader("🏆 Knockout rounds — the criteria system")
 st.markdown(
     """
 From the **Round of 32** onwards (Round of 32, Round of 16, Quarter-finals, Semi-finals,
-Third-place play-off and Final) you predict the **exact score** of every match (e.g. 2–1).
+Third-place play-off and Final) you predict, for every match and **independently**: the
+**exact score** (e.g. 2–1) and **who advances** to the next round. These need not agree —
+e.g. you can call a 2–2 draw but still pick Team 2 to go through on penalties.
 
 For each phase the ranking is built on **three criteria**, applied in order:
 
 | | Criterion | What it means | Direction |
 |---|---|---|:---:|
-| **C1** | Correct winners | How often you called **who goes through** (the outcome: win, draw or loss) | higher = better |
+| **C1** | Who advances | How often you called **who goes through** to the next round | higher = better |
 | **C2** | Exact scores | How often you nailed the **precise score** (e.g. 2–1) — *tiebreaker* | higher = better |
 | **C3** | Goal-difference error | Sum of the gaps between your predicted **goal difference** and the real one — *tiebreaker* | lower = better |
 
 #### How the ranking is decided
 
-1. First we look at **C1** (correct winners): whoever has more sits higher.
+1. First we look at **C1** (who advances): whoever has more sits higher.
 2. Tied on C1? **C2** (exact scores) settles it: the more, the merrier.
 3. Still tied? **C3** (goal-difference error) breaks the deadlock: the lower, the better.
 """
@@ -114,16 +116,17 @@ For each phase the ranking is built on **three criteria**, applied in order:
 with st.expander("📊 Worked example — one match"):
     st.markdown(
         """
-Your pick: **Brazil 2 – 1 Croatia** · Real result: **Brazil 3 – 0 Croatia**
+Your pick: **Brazil 2 – 2 Croatia**, **Brazil** advances ·
+Real: **Brazil 1 – 1 Croatia**, **Brazil** went through on penalties.
 
 | Criterion | Calculation | Outcome |
 |---|---|:---:|
-| **C1** — winner | You said "Brazil wins" and Brazil won | ✅ +1 |
-| **C2** — exact score | 2–1 ≠ 3–0 | ❌ |
-| **C3** — goal-diff error | predicted diff = +1, real diff = +3 → \\|1−3\\| = **2** | +2 |
+| **C1** — who advances | You said Brazil, Brazil advanced | ✅ +1 |
+| **C2** — exact score | 2–2 ≠ 1–1 | ❌ |
+| **C3** — goal-diff error | predicted diff = 0, real diff = 0 → \\|0−0\\| = **0** | +0 |
 
-You called the outcome right (C1) but missed the exact score (C2); your goal-difference error
-on this match is 2 (C3).
+You nailed who advances (C1) but missed the exact score (C2); your goal-difference error
+on this match is 0 (C3).
 """
     )
 

@@ -3,6 +3,11 @@
 **Data:** 2026-06-28
 **Stato:** approvato (design)
 
+> **Revisione 2026-06-28 (in corso d'opera).** L'esito 90' esplicito (1/X/2) è stato **rimosso**: nelle
+> predizioni knockout si inseriscono solo **risultato esatto** e **passaggio del turno**. I criteri finali sono
+> **C1 = passaggio del turno**, **C2 = risultati esatti (conteggio)**, **C3 = errore differenza reti**. Le sezioni
+> sottostanti che citano `outcome_90` / "esito 90' esplicito" / C2=esito sono superate da questa nota.
+
 ## Obiettivo
 
 Nella pagina **Make Predictions**, per ogni partita delle fasi a eliminazione diretta,

@@ -122,13 +122,14 @@ La pagina **Make Predictions** permette a ogni partecipante di registrarsi e com
 | Fase | Contenuto |
 |---|---|
 | `Groups` | Classifica completa 1°→4° per ognuno dei 12 gironi |
-| `Round of 32` | 16 match slot: score previsto |
-| `Round of 16` | 8 match slot: score previsto |
-| `Quarter-finals` | 4 match slot: score previsto |
-| `Semi-finals` | 2 match slot: score previsto |
-| `Final` | Finale 3° posto + Finale |
+| `Round of 32` | 16 match slot: risultato esatto + chi passa il turno |
+| `Round of 16` | 8 match slot: risultato esatto + chi passa il turno |
+| `Quarter-finals` | 4 match slot: risultato esatto + chi passa il turno |
+| `Semi-finals` | 2 match slot: risultato esatto + chi passa il turno |
+| `Final` | Finale 3° posto + Finale: risultato esatto + chi passa il turno |
 
 > Per la fase a gironi si inserisce **solo il posizionamento finale** (1°→4° posto), non i risultati delle singole partite.
+> Per le fasi a eliminazione, risultato esatto e passaggio del turno si pronosticano in modo **indipendente**: non devono per forza concordare (es. pareggio nei 90' ma qualificazione ai rigori).
 
 Il salvataggio è **incrementale**: ogni "Salva" aggiorna solo la fase corrente; le altre restano invariate. È possibile tornare in momenti diversi per completare le fasi successive.
 
@@ -198,7 +199,7 @@ almeno 2 partecipanti).
 | Fase | Evento | Cosa conta come «uguale» |
 |---|---|---|
 | `Groups` | un girone (A–L) | classifica completa 1°→4° identica |
-| Knockout | uno slot-partita | **esito** (1/X/2) e **risultato esatto**, calcolati separatamente |
+| Knockout | uno slot-partita | **chi passa il turno** (quale squadra dello slot) |
 
 Per ogni fase la pagina mostra:
 
@@ -207,7 +208,7 @@ Per ogni fase la pagina mostra:
 - una **tabella** di tutti gli eventi con il livello di consenso `X/N`
 
 > La fase a gironi richiede la classifica completa (i pronostici parziali sono esclusi dal conteggio).
-> Gli slot knockout mostrano l'id (es. `S01`); una volta che l'Admin ha popolato gli accoppiamenti da API, accanto all'id compaiono le squadre reali (es. `S01 — France vs Sweden`).
+> Gli slot knockout mostrano l'id (es. `S01`); una volta che l'Admin ha popolato gli accoppiamenti da API, accanto all'id compaiono le squadre reali (es. `S01 — France vs Sweden`). Il consenso knockout misura **chi i partecipanti danno per qualificato** in ciascuno slot.
 
 La logica vive in [`src/scoring/statistics.py`](src/scoring/statistics.py) (funzioni pure, testate in
 [`tests/test_statistics.py`](tests/test_statistics.py)).
@@ -264,11 +265,13 @@ L'errore totale viene poi convertito in un **punteggio** tramite il fattore di c
 
 | Criterio | Descrizione | Direzione |
 |---|---|---|
-| **C1 — Vincitori corretti** | Numero di partite in cui hai indovinato chi passa il turno (esito) | più alto = meglio |
+| **C1 — Passaggio del turno** | Numero di partite in cui hai indovinato chi passa il turno | più alto = meglio |
 | **C2 — Risultati esatti** | Numero di risultati esatti (spareggio) | più alto = meglio |
 | **C3 — Errore diff. reti** | Somma degli scarti tra differenza reti prevista e reale (spareggio) | più basso = meglio |
 
 Ordinamento: C1 decrescente → C2 decrescente → C3 crescente.
+
+> Risultato esatto e passaggio del turno si pronosticano in modo **indipendente** e non devono per forza concordare (es. pareggio nei 90' ma qualificazione ai rigori). Il passaggio del turno reale (rigori/supplementari) si inserisce nella pagina **Real Results** accanto al punteggio.
 
 ---
 
