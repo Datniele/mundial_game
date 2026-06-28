@@ -2,9 +2,15 @@ import streamlit as st
 
 from src.models.participant import Participant
 from src.models.match import MatchPrediction
-from src.models.tournament import load_fixtures, get_knockout_slots, get_knockout_match_ids_by_phase
+from src.models.tournament import (
+    load_fixtures,
+    get_knockout_slots,
+    get_knockout_match_ids_by_phase,
+    EXCLUDED_KNOCKOUT_SLOTS,
+)
 from src.storage.json_storage import (
     is_phase_locked,
+    load_knockout_bracket,
     load_participant,
     load_registry,
     merge_participant,
@@ -92,23 +98,24 @@ def _phase_filled(p: Participant, phase_name: str) -> bool:
 
 phase = st.radio("Which phase are we filling in?", PHASES, horizontal=True)
 
-# Blocco admin: se la fase è bloccata i pronostici non sono più modificabili
-if is_phase_locked(phase):
-    st.error(
-        f"🔒 Predictions for **{phase}** are locked. The deadline has passed — "
-        "no more changes for this phase."
+# Blocco admin: se la fase è bloccata i pronostici restano visibili ma non modificabili.
+locked = is_phase_locked(phase)
+if locked:
+    st.warning(
+        f"🔒 Predictions for **{phase}** are locked — the deadline has passed. "
+        "Your saved picks are shown below in read-only mode."
     )
-    st.stop()
 
-# Prerequisito: la fase precedente deve essere compilata
-phase_idx = PHASES.index(phase)
-if phase_idx > 0:
-    prev_phase = PHASES[phase_idx - 1]
-    if not _phase_filled(participant, prev_phase):
-        st.warning(
-            f"Whoa, not so fast! Before tackling **{phase}**, you need to save your **{prev_phase}** picks first."
-        )
-        st.stop()
+# Prerequisito: la fase precedente deve essere compilata (solo quando si può ancora editare).
+if not locked:
+    phase_idx = PHASES.index(phase)
+    if phase_idx > 0:
+        prev_phase = PHASES[phase_idx - 1]
+        if not _phase_filled(participant, prev_phase):
+            st.warning(
+                f"Whoa, not so fast! Before tackling **{phase}**, you need to save your **{prev_phase}** picks first."
+            )
+            st.stop()
 
 st.divider()
 
@@ -126,7 +133,12 @@ def _save_knockout(new_preds: dict) -> None:
     updated = Participant(
         name=name,
         match_predictions={
-            mid: MatchPrediction(match_id=mid, home_goals=v["home_goals"], away_goals=v["away_goals"])
+            mid: MatchPrediction(
+                match_id=mid,
+                home_goals=v["home_goals"],
+                away_goals=v["away_goals"],
+                advances=v.get("advances"),
+            )
             for mid, v in new_preds.items()
         },
     )
@@ -158,11 +170,14 @@ if phase == "Groups":
                 if current not in options:
                     current = None
                 idx = options.index(current) if current in options else 0
-                val = col.selectbox(label, options=options, index=idx, key=f"rank_{group_id}_{i}")
+                val = col.selectbox(
+                    label, options=options, index=idx,
+                    key=f"rank_{group_id}_{i}", disabled=locked,
+                )
                 ranking.append(val if val != "—" else None)
             new_rankings[group_id] = ranking
 
-    if st.button("💾 Save Groups", type="primary"):
+    if not locked and st.button("💾 Save Groups", type="primary"):
         _save_rankings(new_rankings)
         st.success("Group standings saved. Nicely done!")
         st.rerun()
@@ -181,6 +196,7 @@ else:
 
     new_preds: dict = {}
     team_opts = ["TBD"] + all_teams
+    bracket = load_knockout_bracket()
 
     for slot_cfg in slot_configs:
         prefix = slot_cfg["prefix"]
@@ -204,36 +220,73 @@ else:
         h[3].markdown("**Goals**")
         h[4].markdown("**Team 2**")
 
-        for i in range(1, n_slots + 1):
-            match_id = f"{prefix}{i:02d}"
+        match_ids = [
+            f"{prefix}{i:02d}" for i in range(1, n_slots + 1)
+            if f"{prefix}{i:02d}" not in EXCLUDED_KNOCKOUT_SLOTS
+        ]
+        # Mostra in ordine cronologico se il bracket conosce le date; altrimenti ordine slot.
+        match_ids.sort(key=lambda mid: (bracket.get(mid, {}).get("utc_date") or "", mid))
+
+        for match_id in match_ids:
             pred = participant.match_predictions.get(match_id)
             home_g = pred.home_goals if pred else 0
             away_g = pred.away_goals if pred else 0
+            entry = bracket.get(match_id)
+            determined = bool(entry and entry.get("determined"))
 
             cols = st.columns([3, 0.8, 0.5, 0.8, 3])
-            cols[0].selectbox(
-                f"t1_{match_id}", team_opts,
-                key=f"t1_{match_id}", label_visibility="collapsed",
-            )
+            if determined:
+                cols[0].markdown(f"**{entry['home']}**")
+            else:
+                cols[0].selectbox(
+                    f"t1_{match_id}", team_opts,
+                    key=f"t1_{match_id}", label_visibility="collapsed", disabled=locked,
+                )
             g1 = cols[1].number_input(
                 f"g1_{match_id}", min_value=0, max_value=20, value=home_g, step=1,
-                key=f"g1_{match_id}", label_visibility="collapsed",
+                key=f"g1_{match_id}", label_visibility="collapsed", disabled=locked,
             )
             cols[2].write("–")
             g2 = cols[3].number_input(
                 f"g2_{match_id}", min_value=0, max_value=20, value=away_g, step=1,
-                key=f"g2_{match_id}", label_visibility="collapsed",
+                key=f"g2_{match_id}", label_visibility="collapsed", disabled=locked,
             )
-            cols[4].selectbox(
-                f"t2_{match_id}", team_opts,
-                key=f"t2_{match_id}", label_visibility="collapsed",
+            if determined:
+                cols[4].markdown(f"**{entry['away']}**")
+            else:
+                cols[4].selectbox(
+                    f"t2_{match_id}", team_opts,
+                    key=f"t2_{match_id}", label_visibility="collapsed", disabled=locked,
+                )
+            # Riga 2: chi passa il turno (indipendente dal risultato)
+            team1_label = entry["home"] if determined else "Team 1"
+            team2_label = entry["away"] if determined else "Team 2"
+
+            ctrl = st.columns([3, 0.8, 0.5, 0.8, 3])
+
+            adv_opts = [team1_label, team2_label]
+            adv_current = pred.advances if (pred and pred.advances) else None
+            adv_idx = (0 if adv_current == "home" else 1) if adv_current in ("home", "away") else None
+            sel_adv = ctrl[4].radio(
+                "Who advances", adv_opts, index=adv_idx,
+                key=f"adv_{match_id}", horizontal=True, disabled=locked,
             )
-            new_preds[match_id] = {"home_goals": int(g1), "away_goals": int(g2)}
+            adv_value = None
+            if sel_adv == team1_label:
+                adv_value = "home"
+            elif sel_adv == team2_label:
+                adv_value = "away"
+
+            new_preds[match_id] = {
+                "home_goals": int(g1),
+                "away_goals": int(g2),
+                "advances": adv_value,   # "home"/"away" o None
+            }
 
         if len(slot_configs) > 1:
             st.divider()
 
-    if st.button(f"💾 Save {phase}", type="primary"):
+    if not locked and st.button(f"💾 Save {phase}", type="primary"):
         _save_knockout(new_preds)
         st.success(f"{phase} predictions saved. Fingers crossed! 🤞")
         st.rerun()

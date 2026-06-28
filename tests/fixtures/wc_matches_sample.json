@@ -1,0 +1,12 @@
+{
+  "matches": [
+    {"id": 200, "stage": "LAST_32", "utcDate": "2026-06-30T21:00:00Z", "status": "TIMED",
+     "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}},
+    {"id": 100, "stage": "LAST_32", "utcDate": "2026-06-28T19:00:00Z", "status": "IN_PLAY",
+     "homeTeam": {"name": "Korea Republic"}, "awayTeam": {"name": "Brazil"}},
+    {"id": 300, "stage": "LAST_16", "utcDate": "2026-07-04T17:00:00Z", "status": "TIMED",
+     "homeTeam": {"name": null}, "awayTeam": {"name": null}},
+    {"id": 50, "stage": "GROUP_STAGE", "utcDate": "2026-06-12T19:00:00Z", "status": "FINISHED",
+     "homeTeam": {"name": "Mexico"}, "awayTeam": {"name": "South Africa"}}
+  ]
+}

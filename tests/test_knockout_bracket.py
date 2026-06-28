@@ -1,0 +1,247 @@
+import importlib
+import json
+from pathlib import Path
+
+from src.storage import json_storage
+
+
+def _isolate_bracket(tmp_path, monkeypatch):
+    """Reindirizza il file del bracket in una cartella temporanea."""
+    path = tmp_path / "knockout_bracket.json"
+    monkeypatch.setattr(json_storage, "KNOCKOUT_BRACKET_PATH", path)
+    return path
+
+
+def test_load_bracket_missing_returns_empty(tmp_path, monkeypatch):
+    _isolate_bracket(tmp_path, monkeypatch)
+    assert json_storage.load_knockout_bracket() == {}
+
+
+def test_save_then_load_bracket_roundtrip(tmp_path, monkeypatch):
+    _isolate_bracket(tmp_path, monkeypatch)
+    bracket = {"S01": {"home": "France", "away": "Sweden",
+                       "utc_date": "2026-06-30T21:00:00Z",
+                       "api_id": 537416, "determined": True}}
+    json_storage.save_knockout_bracket(bracket)
+    assert json_storage.load_knockout_bracket() == bracket
+
+
+def test_merge_bracket_preserves_other_phases(tmp_path, monkeypatch):
+    _isolate_bracket(tmp_path, monkeypatch)
+    json_storage.save_knockout_bracket(
+        {"S01": {"home": "A", "away": "B", "utc_date": None,
+                 "api_id": 1, "determined": True}}
+    )
+    json_storage.merge_knockout_bracket(
+        {"O01": {"home": "C", "away": "D", "utc_date": None,
+                 "api_id": 2, "determined": True}}
+    )
+    merged = json_storage.load_knockout_bracket()
+    assert set(merged.keys()) == {"S01", "O01"}
+    assert merged["S01"]["home"] == "A"
+
+
+from src.scraper import knockout_bracket as kb
+
+_SAMPLE = json.loads(
+    (Path(__file__).parent / "fixtures" / "wc_matches_sample.json").read_text(encoding="utf-8")
+)
+
+
+def test_build_phase_bracket_assigns_slots_by_api_id():
+    bracket = kb.build_phase_bracket(_SAMPLE, "sedicesimi")
+    # id 100 viene prima di id 200 -> S01, S02
+    assert list(bracket.keys()) == ["S01", "S02"]
+    assert bracket["S01"]["api_id"] == 100
+    assert bracket["S02"]["api_id"] == 200
+
+
+def test_build_phase_bracket_normalizes_team_names():
+    bracket = kb.build_phase_bracket(_SAMPLE, "sedicesimi")
+    assert bracket["S01"]["home"] == "South Korea"  # "Korea Republic" -> alias
+    assert bracket["S01"]["away"] == "Brazil"
+    assert bracket["S01"]["determined"] is True
+
+
+def test_build_phase_bracket_marks_undetermined():
+    bracket = kb.build_phase_bracket(_SAMPLE, "ottavi")
+    assert bracket["O01"]["home"] is None
+    assert bracket["O01"]["determined"] is False
+
+
+def test_slot_label_uses_real_teams_when_determined():
+    bracket = kb.build_phase_bracket(_SAMPLE, "sedicesimi")
+    assert kb.slot_label("S01", bracket) == "S01 — South Korea vs Brazil"
+
+
+def test_slot_label_falls_back_to_id():
+    assert kb.slot_label("S99", {}) == "S99"
+    bracket = kb.build_phase_bracket(_SAMPLE, "ottavi")
+    assert kb.slot_label("O01", bracket) == "O01"  # non determinato -> solo id
+
+
+from src.scraper import live_refresh
+
+
+def test_refresh_saves_when_all_determined(monkeypatch):
+    # sedicesimi = 16 slot: il bracket deve essere COMPLETO per essere salvato.
+    payload = {"matches": [
+        {"id": i, "stage": "LAST_32", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}}
+        for i in range(1, 17)
+    ]}
+    captured = {}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "merge_knockout_bracket",
+                        lambda b: captured.update(b))
+    outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
+    assert outcome.status == "api"
+    assert "S01" in captured
+    assert len(captured) == 16
+
+
+def test_refresh_skips_when_bracket_incomplete(monkeypatch):
+    # Solo 1 dei 16 slot dei sedicesimi presenti (e determinato): non deve salvare.
+    payload = {"matches": [
+        {"id": 1, "stage": "LAST_32", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}},
+    ]}
+    called = {"merged": False}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "merge_knockout_bracket",
+                        lambda b: called.update(merged=True))
+    outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
+    assert outcome.status == "error"
+    assert called["merged"] is False
+
+
+def test_refresh_skips_when_undetermined(monkeypatch):
+    # ottavi = 8 slot tutti presenti ma con squadre non ancora note: non deve salvare.
+    payload = {"matches": [
+        {"id": i, "stage": "LAST_16", "utcDate": "x", "status": "TIMED",
+         "homeTeam": {"name": None}, "awayTeam": {"name": None}}
+        for i in range(1, 9)
+    ]}
+    called = {"merged": False}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "merge_knockout_bracket",
+                        lambda b: called.update(merged=True))
+    outcome = live_refresh.refresh_knockout_bracket_from_api("ottavi")
+    assert outcome.status == "error"
+    assert called["merged"] is False
+
+
+def test_refresh_reports_error_on_exception(monkeypatch):
+    def boom():
+        raise RuntimeError("429 Too Many Requests")
+    monkeypatch.setattr(live_refresh, "fetch_matches", boom)
+    outcome = live_refresh.refresh_knockout_bracket_from_api("sedicesimi")
+    assert outcome.status == "error"
+    assert "429" in outcome.message
+
+
+# ── build_knockout_results ──────────────────────────────────────────────────
+
+def _finished(api_id, stage, home, away, hg, ag, winner):
+    return {
+        "id": api_id, "stage": stage, "utcDate": "x", "status": "FINISHED",
+        "homeTeam": {"name": home}, "awayTeam": {"name": away},
+        "score": {"winner": winner, "fullTime": {"home": hg, "away": ag}},
+    }
+
+
+def test_build_results_maps_finished_matches_to_slots():
+    payload = {"matches": [
+        _finished(200, "LAST_32", "France", "Sweden", 2, 1, "HOME_TEAM"),
+        _finished(100, "LAST_32", "Brazil", "Korea Republic", 0, 0, "AWAY_TEAM"),
+    ]}
+    res = kb.build_knockout_results(payload)
+    # ordinati per api_id: 100 -> S01, 200 -> S02
+    assert res["S01"] == {"home_goals": 0, "away_goals": 0, "played": True, "advances": "away"}
+    assert res["S02"] == {"home_goals": 2, "away_goals": 1, "played": True, "advances": "home"}
+
+
+def test_build_results_skips_unfinished_and_keeps_slot_index():
+    # S01 non finito, S02 finito: lo slot index resta allineato all'ordine api_id
+    payload = {"matches": [
+        {"id": 100, "stage": "LAST_32", "status": "TIMED",
+         "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"}, "score": {}},
+        _finished(200, "LAST_32", "Brazil", "Spain", 3, 1, "HOME_TEAM"),
+    ]}
+    res = kb.build_knockout_results(payload)
+    assert "S01" not in res
+    assert res["S02"]["home_goals"] == 3
+
+
+def test_build_results_uses_regular_time_for_90min_score():
+    # Match deciso ai rigori: 90' = 1-1, fullTime 7-6 (include supplementari/rigori),
+    # vince home ai rigori. Il risultato esatto deve essere quello dei 90' (1-1).
+    payload = {"matches": [{
+        "id": 100, "stage": "LAST_32", "status": "FINISHED",
+        "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"},
+        "score": {
+            "winner": "HOME_TEAM", "duration": "PENALTY_SHOOTOUT",
+            "regularTime": {"home": 1, "away": 1},
+            "extraTime": {"home": 0, "away": 0},
+            "penalties": {"home": 6, "away": 5},
+            "fullTime": {"home": 7, "away": 6},
+        },
+    }]}
+    res = kb.build_knockout_results(payload)
+    assert res["S01"]["home_goals"] == 1
+    assert res["S01"]["away_goals"] == 1
+    assert res["S01"]["advances"] == "home"  # vincitore complessivo (rigori)
+
+
+def test_build_results_falls_back_to_fulltime_in_regular_duration():
+    # Match chiuso nei 90': nessun regularTime, fullTime è già il punteggio a 90'.
+    payload = {"matches": [{
+        "id": 100, "stage": "LAST_32", "status": "FINISHED",
+        "homeTeam": {"name": "France"}, "awayTeam": {"name": "Sweden"},
+        "score": {"winner": "AWAY_TEAM", "duration": "REGULAR",
+                  "fullTime": {"home": 0, "away": 2}},
+    }]}
+    res = kb.build_knockout_results(payload)
+    assert res["S01"]["home_goals"] == 0
+    assert res["S01"]["away_goals"] == 2
+    assert res["S01"]["advances"] == "away"
+
+
+def test_build_results_draw_winner_has_no_advances():
+    payload = {"matches": [
+        _finished(100, "LAST_32", "France", "Sweden", 1, 1, "DRAW"),
+    ]}
+    res = kb.build_knockout_results(payload)
+    assert res["S01"]["advances"] is None
+
+
+def test_refresh_results_saves_and_reports(monkeypatch):
+    payload = {"matches": [
+        _finished(100, "LAST_32", "France", "Sweden", 2, 1, "HOME_TEAM"),
+    ]}
+    captured = {}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: payload)
+    monkeypatch.setattr(live_refresh, "save_results", lambda r: captured.update(r))
+    outcome = live_refresh.refresh_knockout_results_from_api()
+    assert outcome.status == "api"
+    assert captured["S01"]["advances"] == "home"
+
+
+def test_refresh_results_empty_reports_default(monkeypatch):
+    saved = {"called": False}
+    monkeypatch.setattr(live_refresh, "fetch_matches", lambda: {"matches": []})
+    monkeypatch.setattr(live_refresh, "save_results", lambda r: saved.update(called=True, value=r))
+    outcome = live_refresh.refresh_knockout_results_from_api()
+    assert outcome.status == "default"
+    # salva comunque (results.json riflette l'API: vuoto)
+    assert saved["called"] is True
+    assert saved["value"] == {}
+
+
+def test_refresh_results_reports_error_on_exception(monkeypatch):
+    def boom():
+        raise RuntimeError("429 Too Many Requests")
+    monkeypatch.setattr(live_refresh, "fetch_matches", boom)
+    outcome = live_refresh.refresh_knockout_results_from_api()
+    assert outcome.status == "error"
+    assert "429" in outcome.message

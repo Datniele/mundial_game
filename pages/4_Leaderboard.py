@@ -4,7 +4,10 @@ import pandas as pd
 from src.storage.json_storage import load_all_participants, load_results, load_group_rankings
 from src.models.tournament import get_knockout_match_ids_by_phase
 from src.scoring.calculator import score_group_stage, score_knockout_round
-from src.scraper.live_refresh import refresh_group_standings_from_api
+from src.scraper.live_refresh import (
+    refresh_group_standings_from_api,
+    refresh_knockout_results_from_api,
+)
 
 st.set_page_config(page_title="Leaderboard", page_icon="🏆", layout="wide")
 st.title("🏆 Leaderboard")
@@ -20,6 +23,11 @@ def _auto_refresh():
     return refresh_group_standings_from_api()
 
 
+@st.cache_data(ttl=60, show_spinner="Refreshing knockout results from API…")
+def _auto_refresh_results():
+    return refresh_knockout_results_from_api()
+
+
 _refresh = _auto_refresh()
 if _refresh.status == "api":
     st.caption("✅ Real group standings auto-refreshed from API-Football.")
@@ -29,6 +37,12 @@ elif _refresh.status == "partial":
     st.caption(f"⚠️ {_refresh.message}")
 else:
     st.caption(f"⚠️ {_refresh.message}")
+
+_refresh_ko = _auto_refresh_results()
+if _refresh_ko.status == "api":
+    st.caption("✅ Knockout results auto-refreshed from API-Football.")
+elif _refresh_ko.status == "error":
+    st.caption(f"⚠️ {_refresh_ko.message}")
 
 participants = load_all_participants()
 results = load_results()
@@ -132,7 +146,7 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
             {
                 "Pos": i,
                 "Player": s.name,
-                "C1 — Correct winners": s.correct_winners,
+                "C1 — Who advances": s.correct_advances,
                 "C2 — Exact scores": s.exact_scores,
                 "C3 — Goal-diff error": s.goal_diff_error,
             }

@@ -102,6 +102,36 @@ def test_knockout_exact_consensus():
     assert exact.is_unanimous
 
 
+def test_knockout_advances_consensus():
+    from src.models.match import MatchPrediction
+
+    def pa(name, side):
+        p = Participant(name=name)
+        p.match_predictions = {
+            "S01": MatchPrediction(match_id="S01", home_goals=0, away_goals=0, advances=side)
+        }
+        return p
+
+    parts = [pa("a", "home"), pa("b", "home"), pa("c", "away")]
+    [ec] = knockout_consensus(parts, ["S01"], "advances")
+    assert ec.total == 3
+    assert ec.top_count == 2
+    assert ec.top_value == "home"
+    assert not ec.is_unanimous
+
+
+def test_knockout_advances_skips_none():
+    from src.models.match import MatchPrediction
+
+    p1 = Participant(name="a")
+    p1.match_predictions = {"S01": MatchPrediction("S01", 1, 0, advances="home")}
+    p2 = Participant(name="b")
+    p2.match_predictions = {"S01": MatchPrediction("S01", 1, 0)}  # advances None
+    # solo 1 partecipante valido -> evento ignorato (total < 2)
+    res = knockout_consensus([p1, p2], ["S01"], "advances")
+    assert res == []
+
+
 def test_knockout_only_predicted_slots_counted():
     # solo 1 partecipante ha pronosticato S02 -> evento ignorato (total < 2)
     parts = [

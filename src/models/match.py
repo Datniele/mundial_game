@@ -34,6 +34,7 @@ class Result:
     match_id: str
     home_goals: int
     away_goals: int
+    advances: Optional[str] = None  # "home" | "away" — chi passa il turno
 
     @property
     def outcome(self) -> Outcome:
@@ -54,6 +55,7 @@ class MatchPrediction:
     match_id: str
     home_goals: int
     away_goals: int
+    advances: Optional[str] = None  # "home" | "away" — chi passa il turno
 
     @property
     def outcome(self) -> Outcome:

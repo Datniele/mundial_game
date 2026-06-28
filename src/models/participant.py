@@ -16,7 +16,11 @@ class Participant:
         return {
             "name": self.name,
             "match_predictions": {
-                mid: {"home_goals": p.home_goals, "away_goals": p.away_goals}
+                mid: {
+                    "home_goals": p.home_goals,
+                    "away_goals": p.away_goals,
+                    "advances": p.advances,
+                }
                 for mid, p in self.match_predictions.items()
             },
             "group_rankings": self.group_rankings,
@@ -30,6 +34,7 @@ class Participant:
                 match_id=mid,
                 home_goals=v["home_goals"],
                 away_goals=v["away_goals"],
+                advances=v.get("advances"),
             )
             for mid, v in data.get("match_predictions", {}).items()
         }

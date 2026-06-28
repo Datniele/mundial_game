@@ -16,9 +16,9 @@ class GroupStageScore:
 @dataclass
 class KnockoutRoundScore:
     name: str
-    correct_winners: int   # C1 — higher = better
-    exact_scores: int      # C2 — higher = better (tiebreaker)
-    goal_diff_error: int   # C3 — lower = better (tiebreaker)
+    correct_advances: int   # C1 — chi passa il turno corretto (higher = better)
+    exact_scores: int       # C2 — risultati esatti (higher = better)
+    goal_diff_error: int    # C3 — errore differenza reti (lower = better)
 
 
 def score_group_stage(
@@ -65,18 +65,19 @@ def score_knockout_round(
 ) -> List[KnockoutRoundScore]:
     """
     Per ogni partecipante con previsioni per i match_ids dati:
-      C1 = vincitori corretti (esito corretto)
-      C2 = risultati esatti
+      C1 = passaggi del turno corretti (pred.advances == result.advances)
+      C2 = risultati esatti (home_goals e away_goals previsti == reali)
       C3 = somma |diff_reti_predetta - diff_reti_reale| per ogni partita
 
-    Ordinamento: C1 desc, C2 desc (spareggio), C3 asc (spareggio).
+    Ordinamento: C1 desc, C2 desc, C3 asc.
     Vengono valutate solo le partite con sia la previsione che il risultato reale.
+    Il campo advances a None non guadagna C1.
     """
     scores = []
     for p in participants:
         if not any(mid in p.match_predictions for mid in match_ids):
             continue
-        correct_winners = 0
+        correct_advances = 0
         exact_scores = 0
         goal_diff_error = 0
         for mid in match_ids:
@@ -84,8 +85,9 @@ def score_knockout_round(
             result = results.get(mid)
             if pred is None or result is None:
                 continue
-            if pred.outcome == result.outcome:
-                correct_winners += 1
+            if pred.advances is not None and result.advances is not None \
+                    and pred.advances == result.advances:
+                correct_advances += 1
             if pred.home_goals == result.home_goals and pred.away_goals == result.away_goals:
                 exact_scores += 1
             pred_diff = pred.home_goals - pred.away_goals
@@ -93,8 +95,8 @@ def score_knockout_round(
             goal_diff_error += abs(pred_diff - actual_diff)
         scores.append(KnockoutRoundScore(
             name=p.name,
-            correct_winners=correct_winners,
+            correct_advances=correct_advances,
             exact_scores=exact_scores,
             goal_diff_error=goal_diff_error,
         ))
-    return sorted(scores, key=lambda s: (-s.correct_winners, -s.exact_scores, s.goal_diff_error))
+    return sorted(scores, key=lambda s: (-s.correct_advances, -s.exact_scores, s.goal_diff_error))

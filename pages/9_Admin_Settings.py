@@ -3,11 +3,12 @@ import re
 
 import streamlit as st
 
-from src.models.tournament import load_fixtures
+from src.models.tournament import get_knockout_slots, load_fixtures
 from src.models.participant import Participant
 from src.storage.json_storage import (
     delete_participant,
     load_all_participants,
+    load_knockout_bracket,
     load_phase_locks,
     merge_participant,
     register_participant,
@@ -15,6 +16,7 @@ from src.storage.json_storage import (
     set_phase_lock,
     update_registry_timestamp,
 )
+from src.scraper.live_refresh import refresh_knockout_bracket_from_api
 
 _AUTHORIZED_EMAILS = {"dani.testav@gmail.com", "pietrosestito96@gmail.com"}
 
@@ -181,7 +183,7 @@ def _phase_export(participant, label: str, check, group_ids: set) -> dict | None
             return None
         return {"name": participant.name, "group_rankings": participant.group_rankings}
     match_preds = {
-        mid: {"home_goals": p.home_goals, "away_goals": p.away_goals}
+        mid: {"home_goals": p.home_goals, "away_goals": p.away_goals, "advances": p.advances}
         for mid, p in participant.match_predictions.items()
         if check(mid, group_ids)
     }
@@ -268,6 +270,84 @@ else:
     st.caption("No phases locked — players can edit everything.")
 if not is_authorized:
     st.caption("Access denied.")
+
+st.divider()
+
+# ── Popola accoppiamenti knockout da API ────────────────────────────────────────
+
+st.subheader("🎯 Populate knockout pairings from API")
+st.caption(
+    "Pull the real team match-ups for a knockout phase from football-data.org. "
+    "Do it once a phase's bracket is set (e.g. after the previous round ends). "
+    "Players will then predict on the real teams instead of TBD slots."
+)
+
+# (etichetta UI, fase interna) — 1:1, così la Finale 3°/Finale si popolano separatamente
+_BRACKET_PHASES = [
+    ("Round of 32", "sedicesimi"),
+    ("Round of 16", "ottavi"),
+    ("Quarter-finals", "quarti"),
+    ("Semi-finals", "semifinali"),
+    ("Third-place play-off", "finale_3posto"),
+    ("Final", "finale"),
+]
+
+# fase interna -> prefisso slot (es. "sedicesimi" -> "S")
+_PHASE_PREFIX = {s["phase"]: s["prefix"] for s in get_knockout_slots()}
+
+_current_bracket = load_knockout_bracket()
+
+col_bk, col_btn = st.columns([2, 1])
+with col_bk:
+    bracket_label = st.selectbox(
+        "Knockout phase",
+        options=[label for label, _ in _BRACKET_PHASES],
+        key="bracket_phase",
+    )
+bracket_internal = next(ph for label, ph in _BRACKET_PHASES if label == bracket_label)
+
+with col_btn:
+    st.write("")
+    st.write("")
+    do_populate = st.button(
+        "⬇️ Populate from API",
+        key="btn_populate_bracket",
+        disabled=not is_authorized,
+    )
+
+if do_populate and is_authorized:
+    outcome = refresh_knockout_bracket_from_api(bracket_internal)
+    if outcome.status == "api":
+        st.success(outcome.message)
+        bracket = load_knockout_bracket()
+        rows = sorted(
+            (
+                {"Slot": sid, "Home": e["home"], "Away": e["away"], "Kick-off (UTC)": e["utc_date"]}
+                for sid, e in bracket.items()
+                if e.get("determined")
+            ),
+            key=lambda r: r["Kick-off (UTC)"] or "",
+        )
+        st.dataframe(rows, use_container_width=True, hide_index=True)
+        st.rerun()
+    else:
+        st.warning(outcome.message)
+
+if not is_authorized:
+    st.caption("Access denied.")
+
+# Stato corrente del bracket salvato
+if _current_bracket:
+    determined_phases = [
+        label
+        for label, ph in _BRACKET_PHASES
+        if any(
+            sid.startswith(_PHASE_PREFIX[ph]) and e.get("determined")
+            for sid, e in _current_bracket.items()
+        )
+    ]
+    if determined_phases:
+        st.caption("Bracket already populated for: " + ", ".join(f"**{p}**" for p in determined_phases))
 
 st.divider()
 
