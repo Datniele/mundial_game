@@ -14,6 +14,7 @@ REGISTRY_PATH = DATA_DIR / "participants" / "registry.json"
 RANKINGS_META_PATH = DATA_DIR / "results" / "group_rankings_meta.json"
 GROUP_STANDINGS_PATH = DATA_DIR / "results" / "group_standings.json"
 PHASE_LOCKS_PATH = DATA_DIR / "results" / "phase_locks.json"
+KNOCKOUT_BRACKET_PATH = DATA_DIR / "results" / "knockout_bracket.json"
 
 
 def _ensure_dirs():
@@ -215,3 +216,27 @@ def set_phase_lock(phase: str, locked: bool) -> set:
 def is_phase_locked(phase: str) -> bool:
     """True se i pronostici per la fase indicata sono bloccati."""
     return phase in load_phase_locks()
+
+
+# ---------- Knockout bracket (accoppiamenti reali da API) ----------
+
+def save_knockout_bracket(bracket: Dict[str, dict]) -> None:
+    """Salva l'intero bracket knockout {slot_id: {home, away, utc_date, api_id, determined}}."""
+    _ensure_dirs()
+    with open(KNOCKOUT_BRACKET_PATH, "w", encoding="utf-8") as f:
+        json.dump(bracket, f, ensure_ascii=False, indent=2)
+
+
+def load_knockout_bracket() -> Dict[str, dict]:
+    """Restituisce il bracket knockout salvato, o {} se non disponibile."""
+    if not KNOCKOUT_BRACKET_PATH.exists():
+        return {}
+    with open(KNOCKOUT_BRACKET_PATH, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def merge_knockout_bracket(phase_bracket: Dict[str, dict]) -> None:
+    """Sovrascrive solo gli slot passati (di una fase), preservando le altre fasi."""
+    existing = load_knockout_bracket()
+    existing.update(phase_bracket)
+    save_knockout_bracket(existing)
