@@ -210,6 +210,8 @@ Per ogni fase la pagina mostra:
 - **Evento più condiviso** 🟢 e **evento più diviso** 🔴, con la previsione più comune
 - una **tabella** di tutti gli eventi con il livello di consenso `X/N`
 
+Per le sole fasi a eliminazione, sotto la tabella di consenso compare anche **«Who advances — by player»**: una griglia con una riga per slot-partita e una colonna per ogni giocatore che ha compilato la fase, che riassume la squadra indicata come **qualificata** da ciascuno (`—` se lo slot non è stato pronosticato). In ogni riga le celle che si discostano dalla **scelta modale** (la squadra più votata) sono evidenziate con uno sfondo tenue, così i pareri fuori dal coro saltano all'occhio. Se il tabellone non è ancora stato popolato da API la cella mostra `Team 1 / Team 2` invece del nome reale (vedi nota su Make Predictions).
+
 > La fase a gironi richiede la classifica completa (i pronostici parziali sono esclusi dal conteggio).
 > Gli slot knockout mostrano l'id (es. `S01`); una volta che l'Admin ha popolato gli accoppiamenti da API, accanto all'id compaiono le squadre reali (es. `S01 — France vs Sweden`). Il consenso knockout misura **chi i partecipanti danno per qualificato** in ciascuno slot.
 

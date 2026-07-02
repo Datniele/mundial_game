@@ -1,3 +1,5 @@
+from collections import Counter
+
 import streamlit as st
 import pandas as pd
 
@@ -73,6 +75,51 @@ def _callouts(events: list[EventConsensus], fmt) -> None:
         )
 
 
+def _advances_by_player(match_ids: list[str]) -> None:
+    """Tabella riepilogo: una riga per slot, una colonna per giocatore, la squadra
+    che ciascuno ha indicato come qualificata (solo chi ha compilato la fase)."""
+    active = [
+        p for p in participants
+        if any(
+            (pred := p.match_predictions.get(mid)) is not None and pred.advances is not None
+            for mid in match_ids
+        )
+    ]
+    if not active:
+        st.info("Nobody has picked who advances in this phase yet.")
+        return
+
+    rows = []
+    for mid in match_ids:
+        row = {"Slot": slot_label(mid, bracket)}
+        for p in active:
+            pred = p.match_predictions.get(mid)
+            if pred is not None and pred.advances is not None:
+                row[p.name] = _advancing_team(mid, pred.advances)
+            else:
+                row[p.name] = "—"
+        rows.append(row)
+
+    st.caption(f"{len(active)} player(s) · {len(match_ids)} match slot(s)")
+    styled = pd.DataFrame(rows).style.apply(_highlight_non_modal, axis=1)
+    st.dataframe(styled, use_container_width=True, hide_index=True)
+
+
+def _highlight_non_modal(row: pd.Series) -> list[str]:
+    """Evidenzia le celle-giocatore che si discostano dalla scelta modale della riga.
+    Le celle non pronosticate ('—') e la colonna Slot restano neutre."""
+    player_cols = [c for c in row.index if c != "Slot"]
+    picks = [row[c] for c in player_cols if row[c] != "—"]
+    highlight = "background-color: rgba(255, 99, 71, 0.28)"
+    styles = {c: "" for c in row.index}
+    if picks:
+        modal_pick = Counter(picks).most_common(1)[0][0]
+        for c in player_cols:
+            if row[c] != "—" and row[c] != modal_pick:
+                styles[c] = highlight
+    return [styles[c] for c in row.index]
+
+
 tabs = st.tabs(["Group Stage"] + [label for _, label in KNOCKOUT_PHASES])
 
 # ── Tab Gironi ─────────────────────────────────────────────────────────────────
@@ -146,3 +193,10 @@ for tab_idx, (phase_keys, phase_label) in enumerate(KNOCKOUT_PHASES, 1):
             for ec in adv_events
         ])
         st.dataframe(df, use_container_width=True, hide_index=True)
+
+        st.markdown("**Who advances — by player**")
+        st.caption(
+            "Le squadre che ciascun giocatore ha indicato come qualificate. "
+            "Se il tabellone non è ancora popolato da API, si legge «Team 1 / Team 2»."
+        )
+        _advances_by_player(match_ids)
